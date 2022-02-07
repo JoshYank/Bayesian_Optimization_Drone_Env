@@ -4,6 +4,64 @@
 Created on Thu Feb  3 13:59:57 2022
 
 @author: josh
+
+Parts of Code come from:
+    MIT License
+
+Copyright (c) 2017 Shromona Ghosh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+and
+
+MIT License
+
+Copyright (c) 2020 Jacopo Panerati
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+This scripts runs the best model found by one of the executions of `singleagent.py`
+
+Example
+-------
+To run the script, type in a terminal:
+
+    $ python BO_Singleagent_February3.py --exp ./results/save-<env>-<algo>-<obs>-<act>-<time_date>
+
+
+Boundary conditions and Safety functions are for Hover Aviary only
 """
 
 import os
@@ -102,7 +160,7 @@ if __name__ == "__main__":
     test_env = gym.make(env_name,
                         #initial_xyzs=(1,[0,0,.5]),
                         #initial_rpys=(0,[math.pi/4, math.pi/2, -math.pi/4]),
-                        gui=True,
+                        gui=False,
                         record=False,
                         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
                         obs=OBS,
@@ -152,15 +210,14 @@ from gym import spaces
 
 def compute_traj(**kwargs):      
     
-
-    test_env.reset()
-    #This sets initial xyz position
+        #This sets initial xyz position
     if 'initial_xyzs' in kwargs:
         test_env.INIT_XYZS=kwargs['initial_xyzs']
         #This sets initial roll, pitch, yaw angle
     if 'initial_rpys' in kwargs:
         test_env.INIT_RPYS=kwargs['initial_rpys']
     
+    test_env.reset()
     iter_time=0
     r=0
     done=False
@@ -182,7 +239,7 @@ def compute_traj(**kwargs):
     
 
 def sut(x0, **kwargs):
-    return compute_traj(intital_xyzs=[0,0,x0[0]], intital_rpys=[x0[1],x0[2],x0[3]])
+    return compute_traj(intital_xyzs=[[0,0,x0[0]]], intital_rpys=[[x0[1],x0[2],x0[3]]])
  
 #--------------------------------------------------------------
 #Bayesian Optimization
