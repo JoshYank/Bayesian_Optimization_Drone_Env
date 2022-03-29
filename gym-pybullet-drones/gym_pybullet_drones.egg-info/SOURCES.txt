@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+gym_pybullet_drones.egg-info/PKG-INFO
+gym_pybullet_drones.egg-info/SOURCES.txt
+gym_pybullet_drones.egg-info/dependency_links.txt
+gym_pybullet_drones.egg-info/requires.txt
+gym_pybullet_drones.egg-info/top_level.txt
