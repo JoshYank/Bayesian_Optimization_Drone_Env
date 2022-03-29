@@ -1,0 +1,4 @@
+Go to the gym-pybullet-drones github repository and follow install steps. Then, replace corresponding files inside with these ones. Fixes structure to run some of the code in spyder when calling parts of a matrix.
+https://github.com/utiasDSL/gym-pybullet-drones
+Follow install steps for adversarial testing.
+https://github.com/shromonag/adversarial_testing
