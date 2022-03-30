@@ -114,6 +114,7 @@ if __name__ == "__main__":
     logger = Logger(logging_freq_hz=int(test_env.SIM_FREQ/test_env.AGGR_PHY_STEPS),
                     num_drones=1
                     )
+    Simulation_Results_Smooth=[]
     test_env.INIT_XYZS=[[0,0,0]]
     test_env.INIT_RPYS=[[0,0,0]]
     test_env.reset()
