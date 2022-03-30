@@ -1,0 +1,16 @@
+Install Adversarial Testing and gym-pybullet-drone into same virtual environment.
+
+To run Bayeisan Optimization for a policy, use the following code:
+  run BO_Singleagent_February3.py --exp ./results/Name_of_Policy_Folder
+  (i.e.)run BO_Singleagent_February3.py --exp ./results/save-hover-ppo-kin-vel-02.22.2022_14.53.33 (This is the policy being tested)
+To see list of outputs, use this code
+  TM_name.f_acqu.Y (for smooth)
+To see list of corresponding environmental parameters, use:
+  TM_name.smooth_X
+The code is slightly different for random_sampling and ns_GP.
+
+To run a simulation by hand, copy lines 105-140 of the test_singleagent.py file and change to wanted environmentall parameter. (Do this fter running the BO file)
+   test_env.INIT_XYZS=[[0,0,0]]
+    test_env.INIT_RPYS=[[0,0,0]]
+This way, we can look at the trajectory the drone takes which is saved to the variable traj. We can also see what the safety output should be.
+This safety value is stored in the variable Simulation_Results_Smooth.
