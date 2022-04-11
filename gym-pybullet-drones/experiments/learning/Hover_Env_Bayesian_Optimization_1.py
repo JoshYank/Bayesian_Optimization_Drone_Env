@@ -218,6 +218,24 @@ rand_nums = [
  754758634,
  ]
 
+rand_nums2=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+rand_nums3=[20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44]
+rand_nums4=[101, 113, 134, 156, 194, 202, 213, 111, 129, 200, 91, 81, 82, 71, 78]
+rand_nums5=[5085, 8991, 1635, 7805, 7187, 8645, 8888, 5520, 6446, 1714, 7053,
+       4131, 7929, 7799, 5766]
+rand_nums6=[1461, 8194, 6927, 5075, 4903, 3799, 6268, 8155, 5502, 1187, 7833,
+       3916, 7906, 3815, 3587]
+rand_nums7=[64846, 28856, 43210, 70661, 14700, 21044, 58191, 17243, 24958, 80194,
+       65943, 58561, 24073, 68194, 69265]
+rand_nums8=[54239, 69118, 51184, 57468, 57945, 78075, 34142, 78062, 33150,
+            64048, 65056, 48293, 35515, 50506, 20161]
+rand_nums9=[63951, 36835, 59249, 17176, 32123, 54118, 79720, 64639, 81307, 16913, 
+       66005, 22091, 78671, 29591, 74848]
+rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
+       127016, 390172, 231790, 414417, 561875, 376595, 632379]
+
+
+
 #Bounds on Environmental Parameters
 bounds=[(0.2,1.0)] #bounds on initial z-position
 bounds.append((-math.pi/3,math.pi/3)) #bounds on roll angle in radians
@@ -270,7 +288,7 @@ def pred3(traj):
     
     
 
-for r in rand_nums:
+for r in rand_nums2:
     
     np.random.seed(r)
     node0=pred_node(f=pred1)
@@ -347,4 +365,60 @@ for r in rand_nums:
     #print(r,ns_details_r3[-1])
     #del TM_ns
 #print(smooth_Failure_count,rand_Failure_count,ns_Failure_count)
+#Making bar plots with error bars
+Random_mean=np.mean(rand_Failure_count)
+
+Smooth_mean=np.mean(smooth_Failure_count)
+
+NS_mean=np.mean(ns_Failure_count)
+
+Smooth_std=np.std(smooth_Failure_count)
+
+NS_std=np.std(ns_Failure_count)
+
+Random_std=np.std(rand_Failure_count)
+
+Method=['Random Sampling', 'Smooth GP', 'Non-Smooth GP']
+x_pos=np.arange(len(Method))
+
+Means_Failure_Modes=[Random_mean,Smooth_mean,NS_mean]
+
+Error=[Random_std,Smooth_std,NS_std]
+
+plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
+    plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
+    plt.title('Failure Modes Found of Three Methods Based Off 15 Runs'),\
+    plt.grid(True,axis='y'), plt.show()
     
+##These are arrays for each specific position value through trajectory
+smooth_safest_params=TM_smooth.smooth_X[smooth_vals.argmax()]
+traj_smooth_safe=[]
+traj_smooth_safe.append(TM_smooth.system_under_test(smooth_safest_params))
+x_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[0]
+y_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[1]
+z_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[2]
+"""
+plt.scatter(x_vals_smooth_safe,y_vals_smooth_safe), plt.title('Scatter Plot of Positions in XY Plane'),\
+    plt.xlabel('X Position'), plt.ylabel('Y Position'), plt.xlim([-2.5,2.5]),plt.ylim([-2.5,2.5]),\
+    plt.axhline(y=-2,xmin=-2,xmax=2, color='r'),plt.axhline(y=2,xmin=-2,xmax=2, color='r'),\
+    plt.axvline(x=-2,ymin=-2,ymax=2,color='r'), plt.axvline(x=2,ymin=-2,ymax=2,color='r')
+    
+plt.scatter(np.zeros_like(z_vals_smooth_safe),z_vals_smooth_safe),plt.title('Scatter Plot of Height Position'),\
+    plt.ylabel('Z Position'),plt.axhline(y=1.4,color='r')
+"""    
+
+traj_smooth_dangerous=[]
+smooth_dangerous_params=TM_smooth.smooth_X[smooth_vals.argmin()]
+traj_smooth_dangerous.append(TM_smooth.system_under_test(smooth_dangerous_params))
+x_vals_smooth_dangerous=np.array(traj_smooth_dangerous[0][0]).T[0]
+y_vals_smooth_dangerous=np.array(traj_smooth_dangerous[0][0]).T[1]
+z_vals_smooth_dangerous=np.array(traj_smooth_dangerous[0][0]).T[2]
+"""
+plt.scatter(x_vals_smooth_dangerous,y_vals_smooth_dangerous), plt.title('Scatter Plot of Positions in XY Plane'),\
+    plt.xlabel('X Position'), plt.ylabel('Y Position'), plt.xlim([-2.5,2.5]),plt.ylim([-2.5,2.5]),\
+    plt.axhline(y=-2,xmin=-2,xmax=2, color='r'),plt.axhline(y=2,xmin=-2,xmax=2, color='r'),\
+    plt.axvline(x=-2,ymin=-2,ymax=2,color='r'), plt.axvline(x=2,ymin=-2,ymax=2,color='r')
+    
+plt.scatter(np.zeros_like(z_vals_smooth_dangerous),z_vals_smooth_dangerous),plt.title('Scatter Plot of Height Position'),\
+    plt.ylabel('Z Position'),plt.axhline(y=1.4,color='r')
+"""
