@@ -1,8 +1,15 @@
 Install Adversarial Testing and gym-pybullet-drone into same virtual environment.
 
 To run Bayeisan Optimization for a policy, use the following code:
-  run BO_Singleagent_February3.py --exp ./results/Name_of_Policy_Folder
-  (i.e.)run BO_Singleagent_February3.py --exp ./results/save-hover-ppo-kin-vel-02.22.2022_14.53.33 (This is the policy being tested)
+  run Hover_Env_Bayesian_Optimization_1.py --exp ./results/Name_of_Policy_Folder
+  (i.e.)run Hover_Env_Bayesian_Optimization_1.py --exp ./results/save-hover-ppo-kin-vel-02.22.2022_14.53.33 (This is the policy being tested)
+This file is under gym-pybullet-drones/experiments/learning/
+
+The code runs through 15 times, and prints out a bar graph of the average number of failure modes found for each method with error bars.
+It also includes code to create positional scatter plots for the safety specifications.
+
+To change experiment number, change rand_nums in line 291 of Hover_Env_Bayesian_Optimization_1.py
+
 To see list of outputs, use this code
   TM_name.f_acqu.Y (for smooth)
 To see list of corresponding environmental parameters, use:
