@@ -404,7 +404,7 @@ plt.scatter(x_vals_smooth_safe,y_vals_smooth_safe), plt.title('Scatter Plot of P
     plt.axvline(x=-2,ymin=-2,ymax=2,color='r'), plt.axvline(x=2,ymin=-2,ymax=2,color='r')
     
 plt.scatter(np.zeros_like(z_vals_smooth_safe),z_vals_smooth_safe),plt.title('Scatter Plot of Height Position'),\
-    plt.ylabel('Z Position'),plt.axhline(y=1.4,color='r')
+    plt.ylabel('Z Position'),plt.axhline(y=1.8,color='r')
 """    
 
 traj_smooth_dangerous=[]
@@ -420,5 +420,5 @@ plt.scatter(x_vals_smooth_dangerous,y_vals_smooth_dangerous), plt.title('Scatter
     plt.axvline(x=-2,ymin=-2,ymax=2,color='r'), plt.axvline(x=2,ymin=-2,ymax=2,color='r')
     
 plt.scatter(np.zeros_like(z_vals_smooth_dangerous),z_vals_smooth_dangerous),plt.title('Scatter Plot of Height Position'),\
-    plt.ylabel('Z Position'),plt.axhline(y=1.4,color='r')
+    plt.ylabel('Z Position'),plt.axhline(y=1.8,color='r')
 """
