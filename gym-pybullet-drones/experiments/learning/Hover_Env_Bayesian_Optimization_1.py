@@ -75,6 +75,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import operator
 import gym
 import torch
 from stable_baselines3.common.env_checker import check_env
@@ -271,14 +272,14 @@ def pred2(traj):
     #x_s = traj_array[:,0]
     traj=traj[0]
     x_s = np.array(traj).T[0]
-    return min(2-np.abs(x_s))
+    return min(0.16-np.abs(x_s))
 
 def pred3(traj):
     #traj_array = np.array(traj) #Here we want the y position
     #y_s = traj_array[:,1]
     traj=traj[0]
     y_s = np.array(traj).T[1]
-    return min(2-np.abs(y_s))
+    return min(0.16-np.abs(y_s))
 
 #node0=pred_node(f=pred1)
 #node1=pred_node(f=pred2)
@@ -288,7 +289,7 @@ def pred3(traj):
     
     
 
-for r in rand_nums2:
+for r in rand_nums:
     
     np.random.seed(r)
     node0=pred_node(f=pred1)
@@ -406,13 +407,20 @@ plt.scatter(x_vals_smooth_safe,y_vals_smooth_safe), plt.title('Scatter Plot of P
 plt.scatter(np.zeros_like(z_vals_smooth_safe),z_vals_smooth_safe),plt.title('Scatter Plot of Height Position'),\
     plt.ylabel('Z Position'),plt.axhline(y=1.8,color='r')
 """    
-
+import operator
+enumerate_obj=enumerate(smooth_vals)
+sorted_smooth_vals=sorted(enumerate_obj,key=operator.itemgetter(1))
+sorted_indices_smooth_vals=[index for index, element in sorted_smooth_vals]
+print(sorted_indices_smooth_vals)
+Four_DangerousEnv_Param=TM_smooth.smooth_X[sorted_indices_smooth_vals[0:4]]
+"""
 traj_smooth_dangerous=[]
 smooth_dangerous_params=TM_smooth.smooth_X[smooth_vals.argmin()]
 traj_smooth_dangerous.append(TM_smooth.system_under_test(smooth_dangerous_params))
 x_vals_smooth_dangerous=np.array(traj_smooth_dangerous[0][0]).T[0]
 y_vals_smooth_dangerous=np.array(traj_smooth_dangerous[0][0]).T[1]
 z_vals_smooth_dangerous=np.array(traj_smooth_dangerous[0][0]).T[2]
+"""
 """
 plt.scatter(x_vals_smooth_dangerous,y_vals_smooth_dangerous), plt.title('Scatter Plot of Positions in XY Plane'),\
     plt.xlabel('X Position'), plt.ylabel('Y Position'), plt.xlim([-2.5,2.5]),plt.ylim([-2.5,2.5]),\
@@ -422,3 +430,33 @@ plt.scatter(x_vals_smooth_dangerous,y_vals_smooth_dangerous), plt.title('Scatter
 plt.scatter(np.zeros_like(z_vals_smooth_dangerous),z_vals_smooth_dangerous),plt.title('Scatter Plot of Height Position'),\
     plt.ylabel('Z Position'),plt.axhline(y=1.8,color='r')
 """
+
+traj_smooth_traj1=[]
+smooth_traj1_params=Four_DangerousEnv_Param[0]
+traj_smooth_traj1.append(TM_smooth.system_under_test(smooth_traj1_params))
+x_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[0]
+y_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[1]
+z_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[2]
+
+traj_smooth_traj2=[]
+smooth_traj2_params=Four_DangerousEnv_Param[1]
+traj_smooth_traj2.append(TM_smooth.system_under_test(smooth_traj2_params))
+x_vals_smooth_traj2=np.array(traj_smooth_traj2[0][0]).T[0]
+y_vals_smooth_traj2=np.array(traj_smooth_traj2[0][0]).T[1]
+z_vals_smooth_traj2=np.array(traj_smooth_traj2[0][0]).T[2]
+
+traj_smooth_traj3=[]
+smooth_traj3_params=Four_DangerousEnv_Param[2]
+traj_smooth_traj3.append(TM_smooth.system_under_test(smooth_traj3_params))
+x_vals_smooth_traj3=np.array(traj_smooth_traj3[0][0]).T[0]
+y_vals_smooth_traj3=np.array(traj_smooth_traj3[0][0]).T[1]
+z_vals_smooth_traj3=np.array(traj_smooth_traj3[0][0]).T[2]
+
+traj_smooth_traj4=[]
+smooth_traj4_params=Four_DangerousEnv_Param[3]
+traj_smooth_traj4.append(TM_smooth.system_under_test(smooth_traj4_params))
+x_vals_smooth_traj4=np.array(traj_smooth_traj4[0][0]).T[0]
+y_vals_smooth_traj4=np.array(traj_smooth_traj4[0][0]).T[1]
+z_vals_smooth_traj4=np.array(traj_smooth_traj4[0][0]).T[2]
+
+
