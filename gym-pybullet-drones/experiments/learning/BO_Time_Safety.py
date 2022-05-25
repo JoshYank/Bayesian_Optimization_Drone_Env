@@ -365,6 +365,37 @@ def pred6(traj):
         time_z3_safe.append(time_z3_f)
     return min(time_z3_safe)
 
+#This predicate defines the function: we want to eventually be in the area of 0.8>=z>=1.2
+    #for at least 80 iterations (80/240=0.333s)
+def pred7(traj):
+    traj=traj[0]
+    goal_area_high=1.4
+    goal_area_low=1.2
+    goal_time=60
+    time_in_goal_area=[]
+    for i in range(len(traj)):
+        if np.array(traj).T[2][i] >=goal_area_low and np.array(traj).T[2][i]<=goal_area_high:
+            time_in_goal_area.append(1)
+        else:
+            time_in_goal_area.append(0)
+    return (-goal_time+np.array(time_in_goal_area).sum())/100
+
+#We always want to follow the speed limits: velocity<0.25m/s when z<=0.8m and
+    #vel<0.4m/s when z>0.8
+def pred8(traj):
+    traj=traj[0]
+    velocity=[]
+    for i in range(len(traj)):
+        if np.array(traj).T[2][i]<=0.5:
+            vel_limit=0.25
+            max_vel=max(np.array(traj).T[3][i],np.array(traj).T[4][i],np.array(traj).T[5][i])
+            velocity.append(vel_limit-max_vel)
+        else:
+            vel_limit=0.45
+            max_vel=max(np.array(traj).T[3][i],np.array(traj).T[4][i],np.array(traj).T[5][i])
+            velocity.append(vel_limit-max_vel)
+    return np.array(velocity).min()
+
 #node0=pred_node(f=pred1)
 #node1=pred_node(f=pred2)
 #node2=pred_node(f=pred3)
@@ -388,8 +419,12 @@ for r in rand_nums:
     node7=min_node(children=[node4,node5])
     node8=min_node(children=[node6,node7])
     
+    node9=pred_node(f=pred7)
+    node10=pred_node(f=pred8)
+    node11=min_node(children=[node9,node10])
+    
     TM_smooth = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                     f_tree=node8, init_samples=20, with_smooth=True,
+                     f_tree=node9, init_samples=20, with_smooth=True,
                      with_random=False, with_ns=False,
                      optimize_restarts=1, exp_weight=2)
     TM_smooth.initialize()
@@ -422,8 +457,12 @@ for r in rand_nums:
     node7_rand=min_node(children=[node4_rand,node5_rand])
     node8_rand=min_node(children=[node6_rand,node7_rand])
     
+    node9_rand=pred_node(f=pred7)
+    node10_rand=pred_node(f=pred8)
+    node11_rand=min_node(children=[node9_rand,node10_rand])
+    
     TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                     f_tree=node8_rand, init_samples=20, with_smooth=False,
+                     f_tree=node9_rand, init_samples=20, with_smooth=False,
                      with_random=True, with_ns=False,
                      optimize_restarts=1, exp_weight=2)
     TM_rand.initialize()
@@ -453,8 +492,12 @@ for r in rand_nums:
     node7_ns=min_node(children=[node4_ns,node5_ns])
     node8_ns=min_node(children=[node6_ns,node7_ns])
     
+    node9_ns=pred_node(f=pred7)
+    node10_ns=pred_node(f=pred8)
+    node11_ns=min_node(children=[node9_ns,node10_ns])
+    
     TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                     f_tree=node8_ns, init_samples=20, with_smooth=False,
+                     f_tree=node9_ns, init_samples=20, with_smooth=False,
                      with_random=False, with_ns=True,
                      optimize_restarts=1, exp_weight=2)
     TM_ns.initialize()
@@ -495,7 +538,7 @@ plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolo
     plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
     plt.title('Failure Modes Found of Three Methods Based Off 15 Runs'),\
     plt.grid(True,axis='y'), plt.show()
-    
+
 ##These are arrays for each specific position value through trajectory
 smooth_safest_params=TM_smooth.smooth_X[smooth_vals.argmax()]
 traj_smooth_safe=[]
@@ -503,6 +546,12 @@ traj_smooth_safe.append(TM_smooth.system_under_test(smooth_safest_params))
 x_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[0]
 y_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[1]
 z_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[2]
+xvel_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[3]
+yvel_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[4]
+zvel_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[5]
+velocity_smooth_safe=[]
+for i in range(len(xvel_vals_smooth_safe)):
+    velocity_smooth_safe.append(max(np.abs(xvel_vals_smooth_safe[i]),np.abs(yvel_vals_smooth_safe[i]),np.abs(zvel_vals_smooth_safe[i])))
 
 import operator
 enumerate_obj=enumerate(smooth_vals)
@@ -517,7 +566,14 @@ traj_smooth_traj1.append(TM_smooth.system_under_test(smooth_traj1_params))
 x_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[0]
 y_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[1]
 z_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[2]
+xvel_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[3]
+yvel_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[4]
+zvel_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[5]
+velocity_smooth_traj1=[]
+for i in range(len(xvel_vals_smooth_traj1)):
+    velocity_smooth_traj1.append(max(np.abs(xvel_vals_smooth_traj1[i]),np.abs(yvel_vals_smooth_traj1[i]),np.abs(zvel_vals_smooth_traj1[i])))
 
+"""
 traj_smooth_traj2=[]
 smooth_traj2_params=Four_DangerousEnv_Param[1]
 traj_smooth_traj2.append(TM_smooth.system_under_test(smooth_traj2_params))
@@ -538,30 +594,37 @@ traj_smooth_traj4.append(TM_smooth.system_under_test(smooth_traj4_params))
 x_vals_smooth_traj4=np.array(traj_smooth_traj4[0][0]).T[0]
 y_vals_smooth_traj4=np.array(traj_smooth_traj4[0][0]).T[1]
 z_vals_smooth_traj4=np.array(traj_smooth_traj4[0][0]).T[2]
-
-#This code is to graph the trajcetory in respect to safety spec
+"""
+#This code is to graph the trajcetory in respect to safety spec pred7
 time_range=np.array(list(range(0,289)))
 fig=plt.figure()
 ax=fig.add_subplot()
 ax.set_xlim(left=0,right=289)
 ax.scatter(time_range,z_vals_smooth_safe,color='green')
 ax.scatter(time_range,z_vals_smooth_traj1,color='Black')
-ax.scatter(time_range,z_vals_smooth_traj2,color='Purple')
-ax.scatter(time_range,z_vals_smooth_traj3,color='Blue')
-ax.scatter(time_range,z_vals_smooth_traj4,color='yellow')
+
 
 #code to plot safety specs
-ax.axvline(x=96,color='r')
-ax.axhline(y=1.08,xmin=0,xmax=1/3,color='c')
+ax.axhline(y=1.4,color='r')
+ax.axhline(y=1.2,color='r')
 
-ax.axvline(x=192,color='r')
-ax.axhline(y=1.44,xmin=1/3,xmax=2/3,color='c')
 
-ax.axvline(x=288,color='r')
-ax.axhline(y=1.65,xmin=2/3,xmax=1,color='c')
 
-ax.legend(['Safe Traj','Most Dangerous','Trajectory 2','Trajectory 3','Trajectory 4'])
-ax.set_title('Safest and 4 Most Dangerous Trajectories')
+ax.legend(['Safe Traj','Most Dangerous'])
+ax.set_title('Safest and Most Dangerous Trajectories: Goal Area')
 ax.set_xlabel('Time [iteration]')
 ax.set_ylabel('Z-Position')
+
+#pred8
+fig1=plt.figure()
+bx=fig1.add_subplot()
+bx.scatter(z_vals_smooth_safe,velocity_smooth_safe,color='green')
+bx.scatter(z_vals_smooth_traj1,velocity_smooth_traj1,color='Black')
+bx.axvline(x=0.5,color='blue')
+bx.axhline(y=0.25,xmin=0,xmax=0.5,color='r')
+bx.axhline(y=0.45,xmin=0.5,color='r')
+bx.legend(['Safe Traj','Most Dangerous'])
+bx.set_title('Safest and Most Dangerous Trajectories: Velocity')
+bx.set_xlabel('Z Position')
+bx.set_ylabel('Velocity')
 
