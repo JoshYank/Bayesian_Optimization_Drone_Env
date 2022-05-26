@@ -365,8 +365,8 @@ def pred6(traj):
         time_z3_safe.append(time_z3_f)
     return min(time_z3_safe)
 
-#This predicate defines the function: we want to eventually be in the area of 0.8>=z>=1.2
-    #for at least 80 iterations (80/240=0.333s)
+#This predicate defines the function: we want to eventually be in the area of 1.2>=z>=1.4
+    #for at least 50 iterations (50/240=00.208s)
 def pred7(traj):
     traj=traj[0]
     goal_area_high=1.4
@@ -380,8 +380,8 @@ def pred7(traj):
             time_in_goal_area.append(0)
     return (-goal_time+np.array(time_in_goal_area).sum())/100
 
-#We always want to follow the speed limits: velocity<0.25m/s when z<=0.8m and
-    #vel<0.4m/s when z>0.8
+#We always want to follow the speed limits: velocity<0.25m/s when z<=0.5m and
+    #vel<0.4m/s when z>0.5
 def pred8(traj):
     traj=traj[0]
     velocity=[]
