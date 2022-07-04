@@ -181,7 +181,7 @@ def compute_traj(TIME,initial_rpy):
     obs=test_env._computeObs()
     traj=[obs[[0,1,2,3,4]]]
     start = time.time()
-    for i in range(TIME*int(test_env.SIM_FREQ/test_env.AGGR_PHY_STEPS)): # Up to 6''
+    for i in range(int(TIME)*int(test_env.SIM_FREQ/test_env.AGGR_PHY_STEPS)): # Up to 6''
         action, _states = model.predict(obs,
                                         deterministic=True # OPTIONAL 'deterministic=False'
                                         )
@@ -266,14 +266,14 @@ ns_Failure_count=[]
 
 def pred1(traj):
     hover_displacement=[]
-    traj=traj[0]
+    traj1=traj[0]
     iter_time1=0
     #checking over time range [0,1] seconds
     for i in range(48):
         iter_time1+=1
-        x_pos=np.array(traj).T[0][i+1]
-        y_pos=np.array(traj).T[1][i+1]
-        z_pos=np.array(traj).T[2][i+1]
+        x_pos=np.array(traj1).T[i+1][0]
+        y_pos=np.array(traj1).T[i+1][1]
+        z_pos=np.array(traj1).T[i+1][2]
         displacement=np.linalg.norm(np.array([0, 0, 1])-[x_pos,y_pos,z_pos])
         hover_displacement.append(0.3-displacement)
     return min(hover_displacement)
@@ -281,16 +281,19 @@ def pred1(traj):
 def pred2(traj):
     roll_robust=[]
     pitch_robust=[]
+    traj1=traj[0]
     iter_time2=0
     #check over full flight [0,TIME] seconds
     for i in range(len(traj)-1):
         iter_time2+=1
-        roll_ang=np.array(traj).T[3][i+1]
-        pitch_ang=np.array(traj).T[4][i+1]
+        roll_ang=np.array(traj1).T[i+1][3]
+        pitch_ang=np.array(traj1).T[i+1][4]
         roll_robust.append((np.pi/3)-np.abs(roll_ang))
         pitch_robust.append((np.pi/3)-np.abs(pitch_ang))
+    min_roll=min(roll_robust)
+    min_pitch=min(pitch_robust)
     orientation=[min(roll_robust),min(pitch_robust)]
-    return min(orientation)
+    return min(min_roll,min_pitch)
 
 for r in rand_nums:
     
@@ -394,13 +397,27 @@ plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolo
 
 smooth_safest_params=TM_smooth.smooth_X[smooth_vals.argmax()]
 traj_smooth_safe=[]
+x_vals_smooth_safe=[]
+y_vals_smooth_safe=[]
+z_vals_smooth_safe=[]
+roll_vals_smooth_safe=[]
+pitch_vals_smooth_safe=[]
+yaw_vals_smooth_safe=[]
 traj_smooth_safe.append(TM_smooth.system_under_test(smooth_safest_params))
-x_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[0]
-y_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[1]
-z_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[2]
-roll_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[3]
-pitch_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[4]
-yaw_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[5]
+for i in range(len(np.array(traj_smooth_safe[0][0]))):
+    x_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[0])
+    y_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[1])
+    z_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[2])
+    roll_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[3])
+    pitch_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[4])
+    #yaw_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[5])
+
+#x_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[0]
+#y_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[1]
+#z_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[2]
+#roll_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[3]
+#pitch_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[4]
+#yaw_vals_smooth_safe=np.array(traj_smooth_safe[0][0]).T[5]
 
 import operator
 enumerate_obj=enumerate(smooth_vals)
@@ -410,14 +427,28 @@ print(sorted_indices_smooth_vals)
 Four_DangerousEnv_Param=TM_smooth.smooth_X[sorted_indices_smooth_vals[0:4]]
 
 traj_smooth_traj1=[]
+x_vals_smooth_traj1=[]
+y_vals_smooth_traj1=[]
+z_vals_smooth_traj1=[]
+roll_vals_smooth_traj1=[]
+pitch_vals_smooth_traj1=[]
+yaw_vals_smooth_traj1=[]
 smooth_traj1_params=Four_DangerousEnv_Param[0]
 traj_smooth_traj1.append(TM_smooth.system_under_test(smooth_traj1_params))
-x_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[0]
-y_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[1]
-z_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[2]
-roll_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[3]
-pitch_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[4]
-yaw_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[5]
+for i in range(len(np.array(traj_smooth_traj1[0][0]))):
+    x_vals_smooth_traj1.append(np.array(traj_smooth_traj1[0][0][i]).T[0])
+    y_vals_smooth_traj1.append(np.array(traj_smooth_traj1[0][0][i]).T[1])
+    z_vals_smooth_traj1.append(np.array(traj_smooth_traj1[0][0][i]).T[2])
+    roll_vals_smooth_traj1.append(np.array(traj_smooth_traj1[0][0][i]).T[3])
+    pitch_vals_smooth_traj1.append(np.array(traj_smooth_traj1[0][0][i]).T[4])
+    #yaw_vals_smooth_traj1.append(np.array(traj_smooth_traj1[0][0][i]).T[5])
+
+#x_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[0]
+#y_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[1]
+#z_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[2]
+#roll_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[3]
+#pitch_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[4]
+#yaw_vals_smooth_traj1=np.array(traj_smooth_traj1[0][0]).T[5]
 
 #3D Plot of Trajectory
 fig=plt.figure()
@@ -462,10 +493,10 @@ roll_safe=[]
 pitch_safe=[]
 iter_time2=0
 #check over full flight [0,TIME] seconds
-for i in range(len(traj_smooth_safe)-1):
-    iter_time2+=1
-    roll_ang_safe=np.array(traj_smooth_safe).T[3][i+1]
-    pitch_ang_safe=np.array(traj_smooth_safe).T[4][i+1]
+for i in range(len(traj_smooth_safe[0][0])-1):
+    #iter_time2+=1
+    roll_ang_safe=roll_vals_smooth_safe[i+1]
+    pitch_ang_safe=pitch_vals_smooth_safe[i+1]
     roll_safe.append(np.abs(roll_ang_safe))
     pitch_safe.append(np.abs(pitch_ang_safe))
     
@@ -473,20 +504,20 @@ roll_dang=[]
 pitch_dang=[]
 iter_time2=0
 #check over full flight [0,TIME] seconds
-for i in range(len(traj_smooth_traj1)-1):
+for i in range(len(traj_smooth_traj1[0][0])-1):
     iter_time2+=1
-    roll_ang_dang=np.array(traj_smooth_traj1).T[3][i+1]
-    pitch_ang_dang=np.array(traj_smooth_traj1).T[4][i+1]
+    roll_ang_dang=roll_vals_smooth_traj1[i+1]
+    pitch_ang_dang=pitch_vals_smooth_traj1[i+1]
     roll_dang.append(np.abs(roll_ang_dang))
     pitch_dang.append(np.abs(pitch_ang_dang))
 
 #Safe traj    
-time_range_2a=np.array(list(range(1,len(traj_smooth_safe))))
+time_range_2a=np.array(list(range(1,len(traj_smooth_safe[0][0]))))
 fig2=plt.figure()
 cx=fig2.add_subplot()
-cx.set_xlim(left=1,right=len(traj_smooth_safe))
+cx.set_xlim(left=1,right=len(traj_smooth_safe[0][0]))
 cx.scatter(time_range_2a,roll_safe,color='green')
-cx.scatter(time_range,pitch_safe,color='yellow')
+cx.scatter(time_range_2a,pitch_safe,color='yellow')
 cx.axhline(y=np.pi/3, color='r')
 
 cx.legend(['Roll Angle','Pitch Angle'])
@@ -495,15 +526,15 @@ cx.set_xlabel('Time [iteration]')
 cx.set_ylabel('Angle [rad]')
 
 #Dangerous traj
-time_range_2b=np.array(list(range(1,len(traj_smooth_traj1))))
+time_range_2b=np.array(list(range(1,len(traj_smooth_traj1[0][0]))))
 fig3=plt.figure()
-dx=fig2.add_subplot()
-dx.set_xlim(left=1,right=len(traj_smooth_traj1))
-dx.scatter(time_range_2a,roll_dang,color='Black')
-dx.scatter(time_range,pitch_dang,color='Purple')
+dx=fig3.add_subplot()
+dx.set_xlim(left=1,right=len(traj_smooth_traj1[0][0]))
+dx.scatter(time_range_2b,roll_dang,color='Black')
+dx.scatter(time_range_2b,pitch_dang,color='Purple')
 dx.axhline(y=np.pi/3, color='r')
 
-cx.legend(['Roll Angle','Pitch Angle'])
-cx.set_title('Dangerous Trajectory: Orientation Over Flight')
-cx.set_xlabel('Time [iteration]')
-cx.set_ylabel('Angle [rad]')
+dx.legend(['Roll Angle','Pitch Angle'])
+dx.set_title('Dangerous Trajectory: Orientation Over Flight')
+dx.set_xlabel('Time [iteration]')
+dx.set_ylabel('Angle [rad]')
