@@ -284,13 +284,25 @@ def pred1(traj):
             Robustness.append(1/abs(angle))
     return min(Robustness)
 
+def pred2(traj):
+    traj1 = traj[0]
+    Robustness=[]
+    for i in range (len(traj1)):
+        #x_pos=np.array(traj1[0]).T[i]
+        #angle=np.array(traj[0]).T[i]
+        x_vel=traj1[i][1]
+        Robustness.append(4-abs(x_vel))
+    return min(Robustness)
+
 for r in rand_nums:
     
     np.random.seed(r)
     node0=pred_node(f=pred1)
+    node1=pred_node(f=pred2)
+    node2=min_node(children=[node0,node1])
 
     TM_smooth = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                     f_tree=node0, init_samples=20, with_smooth=True,
+                     f_tree=node2, init_samples=20, with_smooth=True,
                      with_random=False, with_ns=False,
                      optimize_restarts=1, exp_weight=2)
     TM_smooth.initialize()
@@ -312,9 +324,11 @@ for r in rand_nums:
     
     np.random.seed(r)
     node0_rand=pred_node(f=pred1)
+    node1_rand=pred_node(f=pred2)
+    node2_rand=min_node(children=[node0_rand,node1_rand])
 
     TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                     f_tree=node0_rand, init_samples=20, with_smooth=False,
+                     f_tree=node2_rand, init_samples=20, with_smooth=False,
                      with_random=True, with_ns=False,
                      optimize_restarts=1, exp_weight=2)
     TM_rand.initialize()
@@ -333,9 +347,11 @@ for r in rand_nums:
     
     np.random.seed(r)
     node0_ns=pred_node(f=pred1)
+    node1_ns=pred_node(f=pred2)
+    node2_ns=min_node(children=[node0_ns,node1_ns])
 
     TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                     f_tree=node0_ns, init_samples=20, with_smooth=False,
+                     f_tree=node2_ns, init_samples=20, with_smooth=False,
                      with_random=False, with_ns=True,
                      optimize_restarts=1, exp_weight=2)
     TM_ns.initialize()
@@ -447,34 +463,34 @@ for i in range(len(np.array(traj_smooth_traj1[0][0]))):
     
 #To Save data, change 1B and date at end
 DF=pd.DataFrame(rand_Failure_count)
-DF.to_csv("Experiment_2_Time_Random_Failure_Count_07-18.csv")
+DF.to_csv("Experiment_4_Time_Random_Failure_Count_07-18.csv")
 
 DF=pd.DataFrame(ns_Failure_count)
-DF.to_csv("Experiment_2_Time_NS_Failure_Count_07-18.csv")
+DF.to_csv("Experiment_4_Time_NS_Failure_Count_07-18.csv")
 
 DF=pd.DataFrame(smooth_Failure_count)
-DF.to_csv("Experiment_2_Time_Smooth_Failure_Count_07-18.csv")
+DF.to_csv("Experiment_4_Time_Smooth_Failure_Count_07-18.csv")
 
 #To Save Params and Trajs for best smooth
 DF=pd.DataFrame(smooth_safest_params)
-DF.to_csv("Experiment_2_STL_Smooth_Safe_Param_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_Safe_Param_07-19.csv")
 DF=pd.DataFrame(cart_pos_safe)
-DF.to_csv("Experiment_2_STL_Smooth_Safe_Cart_Pos_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_Safe_Cart_Pos_07-19.csv")
 DF=pd.DataFrame(cart_vel_safe)
-DF.to_csv("Experiment_2_STL_Smooth_Safe_Cart_Vel_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_Safe_Cart_Vel_07-19.csv")
 DF=pd.DataFrame(pole_ang_safe)
-DF.to_csv("Experiment_2_STL_Smooth_Safe_Pole_Ang_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_Safe_Pole_Ang_07-19.csv")
 DF=pd.DataFrame(pole_vel_safe)
-DF.to_csv("Experiment_2_STL_Smooth_Safe_Pole_Vel_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_Safe_Pole_Vel_07-19.csv")
 
 #To Save Params and Trajs for Worst smooth
 DF=pd.DataFrame(smooth_traj1_params)
-DF.to_csv("Experiment_2_STL_Smooth_traj1_Param_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_traj1_Param_07-19.csv")
 DF=pd.DataFrame(cart_pos_traj1)
-DF.to_csv("Experiment_2_STL_Smooth_traj1_Cart_Pos_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_traj1_Cart_Pos_07-19.csv")
 DF=pd.DataFrame(cart_vel_traj1)
-DF.to_csv("Experiment_2_STL_Smooth_traj1_Cart_Vel_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_traj1_Cart_Vel_07-19.csv")
 DF=pd.DataFrame(pole_ang_traj1)
-DF.to_csv("Experiment_2_STL_Smooth_traj1_Pole_Ang_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_traj1_Pole_Ang_07-19.csv")
 DF=pd.DataFrame(pole_vel_traj1)
-DF.to_csv("Experiment_2_STL_Smooth_traj1_Pole_Vel_07-18.csv")
+DF.to_csv("Experiment_4_STL_Smooth_traj1_Pole_Vel_07-19.csv")
