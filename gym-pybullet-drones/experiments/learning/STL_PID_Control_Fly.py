@@ -341,7 +341,7 @@ def pred2(traj):
 
 
 for r in rand_nums:
-    
+    """
     np.random.seed(r)
     node0=pred_node(f=pred1)
     node1=pred_node(f=pred2)
@@ -368,7 +368,7 @@ for r in rand_nums:
     #smooth_results.append(TM_smooth.smooth_count, )
     #del TM_smooth
     #print(r, smooth_details_r1[-1])
-    
+    """
 #for r in rand_nums:
     
     np.random.seed(r)
@@ -386,7 +386,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_rand.initialize()
     
-    TM_rand.run_BO(150)
+    TM_rand.run_BO(100)
     
     rand_Failure_count.append(TM_rand.rand_count)
     
@@ -414,7 +414,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_ns.initialize()
     
-    TM_ns.run_BO(150)
+    TM_ns.run_BO(100)
     
     ns_Failure_count.append(TM_ns.ns_count)
     
@@ -428,26 +428,26 @@ for r in rand_nums:
 #Making bar plots with error bars
 Random_mean=np.mean(rand_Failure_count)
 
-Smooth_mean=np.mean(smooth_Failure_count)
+#Smooth_mean=np.mean(smooth_Failure_count)
 
 NS_mean=np.mean(ns_Failure_count)
 
-Smooth_std=np.std(smooth_Failure_count)
+#Smooth_std=np.std(smooth_Failure_count)
 
 NS_std=np.std(ns_Failure_count)
 
 Random_std=np.std(rand_Failure_count)
 
-Method=['Random Sampling', 'Smooth GP', 'Non-Smooth GP']
+Method=['Random Sampling','Non-Smooth GP']
 x_pos=np.arange(len(Method))
 
-Means_Failure_Modes=[Random_mean,Smooth_mean,NS_mean]
+Means_Failure_Modes=[Random_mean,NS_mean]
 
-Error=[Random_std,Smooth_std,NS_std]
+Error=[Random_std,NS_std]
 
 plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
     plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
-    plt.title('Failure Modes Found of Three Methods Based Off 15 Runs'),\
+    plt.title('Failure Modes Found:  BO v. Random Sampling'),\
     plt.grid(True,axis='y'), plt.show()
 
 """
@@ -500,12 +500,31 @@ gx.set_ylabel('Robustness')
 
 #To Save data, change 1B and date at end
 DF=pd.DataFrame(rand_Failure_count)
-DF.to_csv("Experiment_1_Safety_Random_Failure_Count_08-10.csv")
+DF.to_csv("Drone_Experiment_2_Safety_Random_Failure_Count_08-13.csv")
 
 DF=pd.DataFrame(ns_Failure_count)
-DF.to_csv("Experiment_1_Safety_NS_Failure_Count_08-10.csv")
+DF.to_csv("Drone_Experiment_2_Safety_BO_Failure_Count_08-13.csv")
 
 DF=pd.DataFrame(smooth_Failure_count)
-DF.to_csv("Experiment_1_Safety_Smooth_Failure_Count_08-10.csv")
+DF.to_csv("Drone_Experiment_1_Safety_Smooth_Failure_Count_08-10.csv")
+
+# safest traj
+smooth_safest_params=TM_smooth.smooth_X[smooth_vals.argmax()]
+traj_smooth_safe=[]
+x_vals_smooth_safe=[]
+y_vals_smooth_safe=[]
+z_vals_smooth_safe=[]
+roll_vals_smooth_safe=[]
+pitch_vals_smooth_safe=[]
+yaw_vals_smooth_safe=[]
+traj_smooth_safe.append(TM_smooth.system_under_test(smooth_safest_params))
+for i in range(len(np.array(traj_smooth_safe[0][0]))):
+    x_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[0])
+    y_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[1])
+    z_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[2])
+    roll_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[3])
+    pitch_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[4])
+    #yaw_vals_smooth_safe.append(np.array(traj_smooth_safe[0][0][i]).T[5])
+
 
 """
