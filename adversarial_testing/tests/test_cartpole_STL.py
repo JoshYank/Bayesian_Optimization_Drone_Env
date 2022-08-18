@@ -31,8 +31,14 @@ import numpy as np
 
 import gym
 
+import gym
+import numpy as np
+from baselines import deepq
+from baselines.common import set_global_seeds
 
+"""
 class EpisodicAgent(object):
+    """
     """
     Episodic agent is a simple nearest-neighbor based agent:
     - At training time it remembers all tuples of (state, action, reward).
@@ -41,7 +47,7 @@ class EpisodicAgent(object):
     - At test time it looks up k-nearest neighbors in the state space
         and takes the action that most often leads to highest average value.
     """
-
+    """
     def __init__(self, action_space):
         self.action_space = action_space
         assert isinstance(action_space, gym.spaces.discrete.Discrete), 'unsupported action space for now.'
@@ -183,6 +189,34 @@ for i in range(episode_count):
 
     sum_reward_running = sum_reward_running * 0.95 + sum_reward * 0.05
     print('%d running reward: %f' % (i, sum_reward_running))
+"""
+
+
+'''
+Here we consider a controller trained on deepq for the cartpole
+environment in OpenAI Gym. The controller was taken from the baselines.
+'''
+def callback(lcl, glb):
+    # stop training if reward exceeds 199
+    is_solved = lcl['t'] > 100 and sum(lcl['episode_rewards'][-101:-1]) / 100 >= 199
+    return is_solved
+
+env = gym.make("CartPole-v0")
+seed = 17588724670887928270
+env.seed(seed)
+model = deepq.models.mlp([64])
+act = deepq.learn(
+    env,
+    q_func=model,
+    lr=1e-3,
+    max_timesteps=100000,
+    buffer_size=50000,
+    exploration_fraction=0.1,
+    exploration_final_eps=0.02,
+    print_freq=10,
+    callback=callback
+)
+
 
 def compute_traj(max_steps,ead=False, **kwargs):
     env.reset()
@@ -203,7 +237,8 @@ def compute_traj(max_steps,ead=False, **kwargs):
     iters= 0
     for _ in range(max_steps):
         iters+=1
-        action = controller(ob, agent)
+        #action = controller(ob, agent) #nearest neighbor controller
+        action = act(ob[None])[0] #Deepq controller
         ob, r, done, _ = env.step(action)
         reward += r
         traj.append(ob)
@@ -241,12 +276,22 @@ rand_nums = [2440271967,
  3406852803,
  1769141240,
  109713304,
- 3433822084,
- 2481885549,
- 2630720097,
- 1291718590,
- 2572110400,
- 3580267181]
+ 3433822084]
+
+rand_nums2=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+rand_nums3=[20, 22, 24, 26, 28, 30, 32, 34, 36, 38]
+rand_nums4=[101, 113, 134, 156, 194, 202, 213, 111, 129, 200]
+rand_nums5=[5085, 8991, 1635, 7805, 7187, 8645, 8888, 5520, 6446, 1714,]
+rand_nums6=[1461, 8194, 6927, 5075, 4903, 3799, 6268, 8155, 5502, 1187]
+rand_nums7=[64846, 28856, 43210, 70661, 14700, 21044, 58191, 17243, 24958, 80194]
+rand_nums8=[54239, 69118, 51184, 57468, 57945, 78075, 34142, 78062, 33150,
+            64048]
+rand_nums9=[63951, 36835, 59249, 17176, 32123, 54118, 79720, 64639, 81307, 16913]
+rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
+       127016, 390172]
+rand_nums11=[61,18,2,33,31,49,81,17,11,131]
+rand_nums12=[65,13,19,38,32,99,84,22,41,143]
+rand_nums_test=[172857]
 
 # Requirement 1: Find the initial configuration that minimizes the reward
 # We need only one node for the reward. The reward is a smooth function
@@ -279,7 +324,7 @@ def pred1(traj):
         x_pos=traj1[i][0]
         angle=traj1[i][2]
         if x_pos <= -0.3 or x_pos>=0.3:
-            Robustness.append(0.349066-angle)
+            Robustness.append(0.349066-abs(angle))
         if x_pos>-0.3 and x_pos<0.2:
             Robustness.append(1/abs(angle))
     return min(Robustness)
@@ -295,7 +340,7 @@ def pred2(traj):
     return min(Robustness)
 
 for r in rand_nums:
-    
+    """
     np.random.seed(r)
     node0=pred_node(f=pred1)
     node1=pred_node(f=pred2)
@@ -319,7 +364,7 @@ for r in rand_nums:
     #smooth_results.append(TM_smooth.smooth_count, )
     #del TM_smooth
     #print(r, smooth_details_r1[-1])
-    
+    """
 #for r in rand_nums:
     
     np.random.seed(r)
@@ -333,7 +378,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_rand.initialize()
     
-    TM_rand.run_BO(150)
+    TM_rand.run_BO(100)
     
     rand_Failure_count.append(TM_rand.rand_count)
     
@@ -356,7 +401,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_ns.initialize()
     
-    TM_ns.run_BO(150)
+    TM_ns.run_BO(100)
     
     ns_Failure_count.append(TM_ns.ns_count)
     
@@ -367,30 +412,30 @@ for r in rand_nums:
 
 Random_mean=np.mean(rand_Failure_count)
 
-Smooth_mean=np.mean(smooth_Failure_count)
+#Smooth_mean=np.mean(smooth_Failure_count)
 
 NS_mean=np.mean(ns_Failure_count)
 
-Smooth_std=np.std(smooth_Failure_count)
+#Smooth_std=np.std(smooth_Failure_count)
 
 NS_std=np.std(ns_Failure_count)
 
 Random_std=np.std(rand_Failure_count)
 
-Method=['Random Sampling', 'Smooth GP', 'Non-Smooth GP']
+Method=['Random Sampling', 'BO']
 x_pos=np.arange(len(Method))
 
-Means_Failure_Modes=[Random_mean,Smooth_mean,NS_mean]
+Means_Failure_Modes=[Random_mean,NS_mean]
 
-Error=[Random_std,Smooth_std,NS_std]
+Error=[Random_std,NS_std]
 
 plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
     plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
-    plt.title('Failure Modes Found of Three Methods Based Off 15 Runs'),\
+    plt.title('Failure Modes Found: BO v. Random Sampling'),\
     plt.grid(True,axis='y'), plt.show()
 
     
-    
+ """   
     
 #To plot robustness over BO iteration
 time_range_iteration=np.array(list(range(1,len(TM_smooth.f_acqu.Y)+1)))
@@ -463,34 +508,35 @@ for i in range(len(np.array(traj_smooth_traj1[0][0]))):
     
 #To Save data, change 1B and date at end
 DF=pd.DataFrame(rand_Failure_count)
-DF.to_csv("Experiment_4_Time_Random_Failure_Count_07-18.csv")
+DF.to_csv("Experiment_6_Time_Random_Failure_Count_07-18.csv")
 
 DF=pd.DataFrame(ns_Failure_count)
-DF.to_csv("Experiment_4_Time_NS_Failure_Count_07-18.csv")
+DF.to_csv("Experiment_6_Time_NS_Failure_Count_07-18.csv")
 
 DF=pd.DataFrame(smooth_Failure_count)
-DF.to_csv("Experiment_4_Time_Smooth_Failure_Count_07-18.csv")
+DF.to_csv("Experiment_6_Time_Smooth_Failure_Count_07-18.csv")
 
 #To Save Params and Trajs for best smooth
 DF=pd.DataFrame(smooth_safest_params)
-DF.to_csv("Experiment_4_STL_Smooth_Safe_Param_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_Safe_Param_07-19.csv")
 DF=pd.DataFrame(cart_pos_safe)
-DF.to_csv("Experiment_4_STL_Smooth_Safe_Cart_Pos_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_Safe_Cart_Pos_07-19.csv")
 DF=pd.DataFrame(cart_vel_safe)
-DF.to_csv("Experiment_4_STL_Smooth_Safe_Cart_Vel_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_Safe_Cart_Vel_07-19.csv")
 DF=pd.DataFrame(pole_ang_safe)
-DF.to_csv("Experiment_4_STL_Smooth_Safe_Pole_Ang_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_Safe_Pole_Ang_07-19.csv")
 DF=pd.DataFrame(pole_vel_safe)
-DF.to_csv("Experiment_4_STL_Smooth_Safe_Pole_Vel_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_Safe_Pole_Vel_07-19.csv")
 
 #To Save Params and Trajs for Worst smooth
 DF=pd.DataFrame(smooth_traj1_params)
-DF.to_csv("Experiment_4_STL_Smooth_traj1_Param_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_traj1_Param_07-19.csv")
 DF=pd.DataFrame(cart_pos_traj1)
-DF.to_csv("Experiment_4_STL_Smooth_traj1_Cart_Pos_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_traj1_Cart_Pos_07-19.csv")
 DF=pd.DataFrame(cart_vel_traj1)
-DF.to_csv("Experiment_4_STL_Smooth_traj1_Cart_Vel_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_traj1_Cart_Vel_07-19.csv")
 DF=pd.DataFrame(pole_ang_traj1)
-DF.to_csv("Experiment_4_STL_Smooth_traj1_Pole_Ang_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_traj1_Pole_Ang_07-19.csv")
 DF=pd.DataFrame(pole_vel_traj1)
-DF.to_csv("Experiment_4_STL_Smooth_traj1_Pole_Vel_07-19.csv")
+DF.to_csv("Experiment_6_STL_Smooth_traj1_Pole_Vel_07-19.csv")
+"""
