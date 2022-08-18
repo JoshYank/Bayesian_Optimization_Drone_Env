@@ -40,6 +40,15 @@ import sklearn.pipeline
 import sklearn.preprocessing
 from sklearn.kernel_approximation import RBFSampler
 
+from baselines.common import set_global_seeds, tf_util as U
+import gym, logging
+from baselines import logger
+import numpy as np
+import tensorflow as tf
+from baselines.ppo1 import mlp_policy, pposgd_simple
+from baselines.ppo1.pposgd_simple import *
+
+"""
 # Training phase
 def exec_time(func):
     def new_func(*args, **kwargs):
@@ -232,6 +241,146 @@ def controller_training(episodes=200):
 
 
 pe, sess= controller_training(200)
+"""
+#PPO Controller
+def learn_return(env, policy_func, *,
+        timesteps_per_batch, # timesteps per actor per update
+        clip_param, entcoeff, # clipping parameter epsilon, entropy coeff
+        optim_epochs, optim_stepsize, optim_batchsize,# optimization hypers
+        gamma, lam, # advantage estimation
+        max_timesteps=0, max_episodes=0, max_iters=0, max_seconds=0,  # time constraint
+        callback=None, # you can do anything in the callback, since it takes locals(), globals()
+        schedule='constant' # annealing for stepsize parameters (epsilon and adam)
+        ):
+    # Setup losses and stuff
+    # ----------------------------------------
+    ob_space = env.observation_space
+    ac_space = env.action_space
+    pi = policy_func("pi", ob_space, ac_space) # Construct network for new policy
+    oldpi = policy_func("oldpi", ob_space, ac_space) # Network for old policy
+    atarg = tf.placeholder(dtype=tf.float32, shape=[None]) # Target advantage function (if applicable)
+    ret = tf.placeholder(dtype=tf.float32, shape=[None]) # Empirical return
+
+    lrmult = tf.placeholder(name='lrmult', dtype=tf.float32, shape=[]) # learning rate multiplier, updated with schedule
+    clip_param = clip_param * lrmult # Annealed cliping parameter epislon
+
+    ob = U.get_placeholder_cached(name="ob")
+    ac = pi.pdtype.sample_placeholder([None])
+
+    kloldnew = oldpi.pd.kl(pi.pd)
+    ent = pi.pd.entropy()
+    meankl = U.mean(kloldnew)
+    meanent = U.mean(ent)
+    pol_entpen = (-entcoeff) * meanent
+
+    ratio = tf.exp(pi.pd.logp(ac) - oldpi.pd.logp(ac)) # pnew / pold
+    surr1 = ratio * atarg # surrogate from conservative policy iteration
+    surr2 = U.clip(ratio, 1.0 - clip_param, 1.0 + clip_param) * atarg #
+    pol_surr = - U.mean(tf.minimum(surr1, surr2)) # PPO's pessimistic surrogate (L^CLIP)
+    vfloss1 = tf.square(pi.vpred - ret)
+    vpredclipped = oldpi.vpred + tf.clip_by_value(pi.vpred - oldpi.vpred, -clip_param, clip_param)
+    vfloss2 = tf.square(vpredclipped - ret)
+    vf_loss = .5 * U.mean(tf.maximum(vfloss1, vfloss2)) # we do the same clipping-based trust region for the value function
+    total_loss = pol_surr + pol_entpen + vf_loss
+    losses = [pol_surr, pol_entpen, vf_loss, meankl, meanent]
+    loss_names = ["pol_surr", "pol_entpen", "vf_loss", "kl", "ent"]
+
+    var_list = pi.get_trainable_variables()
+    lossandgrad = U.function([ob, ac, atarg, ret, lrmult], losses + [U.flatgrad(total_loss, var_list)])
+    adam = MpiAdam(var_list)
+
+    assign_old_eq_new = U.function([],[], updates=[tf.assign(oldv, newv)
+        for (oldv, newv) in zipsame(oldpi.get_variables(), pi.get_variables())])
+    compute_losses = U.function([ob, ac, atarg, ret, lrmult], losses)
+
+    U.initialize()
+    adam.sync()
+
+    # Prepare for rollouts
+    # ----------------------------------------
+    seg_gen = traj_segment_generator(pi, env, timesteps_per_batch, stochastic=True)
+
+    episodes_so_far = 0
+    timesteps_so_far = 0
+    iters_so_far = 0
+    tstart = time.time()
+    lenbuffer = deque(maxlen=100) # rolling buffer for episode lengths
+    rewbuffer = deque(maxlen=100) # rolling buffer for episode rewards
+
+    assert sum([max_iters>0, max_timesteps>0, max_episodes>0, max_seconds>0])==1, "Only one time constraint permitted"
+
+    while True:
+        if callback: callback(locals(), globals())
+        if max_timesteps and timesteps_so_far >= max_timesteps:
+            break
+        elif max_episodes and episodes_so_far >= max_episodes:
+            break
+        elif max_iters and iters_so_far >= max_iters:
+            break
+        elif max_seconds and time.time() - tstart >= max_seconds:
+            break
+
+        if schedule == 'constant':
+            cur_lrmult = 1.0
+        elif schedule == 'linear':
+            cur_lrmult =  max(1.0 - float(timesteps_so_far) / max_timesteps, 0)
+        else:
+            raise NotImplementedError
+
+        logger.log("********** Iteration %i ************"%iters_so_far)
+
+        seg = seg_gen.__next__()
+        print(sum(seg['rew']),seg['rew'], len(seg['rew']))
+        add_vtarg_and_adv(seg, gamma, lam)
+
+        # ob, ac, atarg, ret, td1ret = map(np.concatenate, (obs, acs, atargs, rets, td1rets))
+        ob, ac, atarg, tdlamret = seg["ob"], seg["ac"], seg["adv"], seg["tdlamret"]
+        vpredbefore = seg["vpred"] # predicted value function before udpate
+        atarg = (atarg - atarg.mean()) / atarg.std() # standardized advantage function estimate
+        d = Dataset(dict(ob=ob, ac=ac, atarg=atarg, vtarg=tdlamret), shuffle=not pi.recurrent)
+        optim_batchsize = optim_batchsize or ob.shape[0]
+
+        if hasattr(pi, "ob_rms"): pi.ob_rms.update(ob) # update running mean/std for policy
+
+        assign_old_eq_new() # set old parameter values to new parameter values
+        logger.log("Optimizing...")
+        logger.log(fmt_row(13, loss_names))
+        # Here we do a bunch of optimization epochs over the data
+        for _ in range(optim_epochs):
+            losses = [] # list of tuples, each of which gives the loss for a minibatch
+            for batch in d.iterate_once(optim_batchsize):
+                *newlosses, g = lossandgrad(batch["ob"], batch["ac"], batch["atarg"], batch["vtarg"], cur_lrmult)
+                adam.update(g, optim_stepsize * cur_lrmult)
+                losses.append(newlosses)
+            logger.log(fmt_row(13, np.mean(losses, axis=0)))
+        lrlocal = (seg["ep_lens"], seg["ep_rets"])  # local values
+        listoflrpairs = MPI.COMM_WORLD.allgather(lrlocal)  # list of tuples
+        lens, rews = map(flatten_lists, zip(*listoflrpairs))
+        episodes_so_far += len(lens)
+        timesteps_so_far += sum(lens)
+        iters_so_far+=1
+
+    return pi
+
+U.make_session(num_cpu=1).__enter__()
+seed = 8902077161928034768
+env = gym.make("MountainCarContinuous-v0")
+env.seed(seed)
+num_timesteps=5e6
+
+def policy_fn(name, ob_space, ac_space):
+    return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+                                hid_size=64, num_hid_layers=2)
+
+env.seed(seed)
+gym.logger.setLevel(logging.WARN)
+pi = learn_return(env, policy_fn,
+        max_timesteps=num_timesteps,
+        timesteps_per_batch=2048,
+        clip_param=0.2, entcoeff=0.0,
+        optim_epochs=10, optim_stepsize=3e-4, optim_batchsize=64,
+        gamma=0.99, lam=0.95,
+    )
 
 
 from gym import spaces
@@ -326,13 +475,22 @@ rand_nums = [
  1304673443,
  3857496775,
  2668478815,
- 278535713,
- 1762150547,
- 788841329,
- 2525132954,
- 677754898,
- 754758634
+ 278535713
  ]
+rand_nums2=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+rand_nums3=[20, 22, 24, 26, 28, 30, 32, 34, 36, 38]
+rand_nums4=[101, 113, 134, 156, 194, 202, 213, 111, 129, 200]
+rand_nums5=[5085, 8991, 1635, 7805, 7187, 8645, 8888, 5520, 6446, 1714,]
+rand_nums6=[1461, 8194, 6927, 5075, 4903, 3799, 6268, 8155, 5502, 1187]
+rand_nums7=[64846, 28856, 43210, 70661, 14700, 21044, 58191, 17243, 24958, 80194]
+rand_nums8=[54239, 69118, 51184, 57468, 57945, 78075, 34142, 78062, 33150,
+            64048]
+rand_nums9=[63951, 36835, 59249, 17176, 32123, 54118, 79720, 64639, 81307, 16913]
+rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
+       127016, 390172]
+rand_nums11=[61,18,2,33,31,49,81,17,11,131]
+rand_nums12=[65,13,19,38,32,99,84,22,41,143]
+rand_nums_test=[172857]
 
 # Requirement 1: Find the initial configuration that minimizes the reward
 # We need only one node for the reward. The reward is a smooth function
@@ -390,6 +548,7 @@ def pred2(traj):
     return min(Robustness)
 
 for r in rand_nums:
+    """
     np.random.seed(r)
     node0=pred_node(f=pred1)
     node1=pred_node(f=pred2)
@@ -401,7 +560,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_smooth.initialize()
     
-    TM_smooth.run_BO(150)
+    TM_smooth.run_BO(100)
     
     smooth_Failure_count.append(TM_smooth.smooth_count)
     
@@ -413,7 +572,7 @@ for r in rand_nums:
     #smooth_results.append(TM_smooth.smooth_count, )
     #del TM_smooth
     #print(r, smooth_details_r1[-1])
-    
+    """
 #for r in rand_nums:
     
     np.random.seed(r)
@@ -427,7 +586,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_rand.initialize()
     
-    TM_rand.run_BO(150)
+    TM_rand.run_BO(100)
     
     rand_Failure_count.append(TM_rand.rand_count)
     
@@ -450,7 +609,7 @@ for r in rand_nums:
                      optimize_restarts=1, exp_weight=2)
     TM_ns.initialize()
     
-    TM_ns.run_BO(150)
+    TM_ns.run_BO(100)
     
     ns_Failure_count.append(TM_ns.ns_count)
     
@@ -461,32 +620,32 @@ for r in rand_nums:
 
 Random_mean=np.mean(rand_Failure_count)
 
-Smooth_mean=np.mean(smooth_Failure_count)
+#Smooth_mean=np.mean(smooth_Failure_count)
 
 NS_mean=np.mean(ns_Failure_count)
 
-Smooth_std=np.std(smooth_Failure_count)
+#Smooth_std=np.std(smooth_Failure_count)
 
 NS_std=np.std(ns_Failure_count)
 
 Random_std=np.std(rand_Failure_count)
 
-Method=['Random Sampling', 'Smooth GP', 'Non-Smooth GP']
+Method=['Random Sampling',  'BO']
 x_pos=np.arange(len(Method))
 
-Means_Failure_Modes=[Random_mean,Smooth_mean,NS_mean]
+Means_Failure_Modes=[Random_mean,NS_mean]
 
-Error=[Random_std,Smooth_std,NS_std]
+Error=[Random_std,NS_std]
 
 plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
     plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
-    plt.title('Failure Modes Found of Three Methods Based Off 15 Runs'),\
+    plt.title('Failure Modes Found: BO v. Random Sampling'),\
     plt.grid(True,axis='y'), plt.show()
 
    
 #How to Plot failure modes per test
 """
-Test_num=['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15']
+Test_num=['1','2','3','4','5','6','7','8','9','10']
 X_axis=np.arange(len(Test_num))
 
 plt.bar(X_axis-0.2,smooth_Failure_count,0.2,label='Smooth BO')
@@ -565,28 +724,62 @@ for i in range(len(np.array(traj_smooth_traj1[0][0]))):
     
 #To Save data, change 1B and date at end
 DF=pd.DataFrame(rand_Failure_count)
-DF.to_csv("Experiment_6_Time_Random_Failure_Count_07-27.csv")
+DF.to_csv("Experiment_7_Time_Random_Failure_Count_07-27.csv")
 
 DF=pd.DataFrame(ns_Failure_count)
-DF.to_csv("Experiment_6_Time_NS_Failure_Count_07-27.csv")
+DF.to_csv("Experiment_7_Time_NS_Failure_Count_07-27.csv")
 
 DF=pd.DataFrame(smooth_Failure_count)
-DF.to_csv("Experiment_6_Time_Smooth_Failure_Count_07-27.csv")
+DF.to_csv("Experiment_7_Time_Smooth_Failure_Count_07-27.csv")
 
 #To Save Params and Trajs for best smooth
 DF=pd.DataFrame(smooth_safest_params)
-DF.to_csv("Experiment_6_STL_Smooth_Safe_Param_07-27.csv")
+DF.to_csv("Experiment_7_STL_Smooth_Safe_Param_07-27.csv")
 DF=pd.DataFrame(cart_pos_safe)
-DF.to_csv("Experiment_6_STL_Smooth_Safe_Cart_Pos_07-27.csv")
+DF.to_csv("Experiment_7_STL_Smooth_Safe_Cart_Pos_07-27.csv")
 DF=pd.DataFrame(cart_vel_safe)
-DF.to_csv("Experiment_6_STL_Smooth_Safe_Cart_Vel_07-27.csv")
+DF.to_csv("Experiment_7_STL_Smooth_Safe_Cart_Vel_07-27.csv")
 
 
 #To Save Params and Trajs for Worst smooth
 DF=pd.DataFrame(smooth_traj1_params)
-DF.to_csv("Experiment_6_STL_Smooth_traj1_Param_07-27.csv")
+DF.to_csv("Experiment_7_STL_Smooth_traj1_Param_07-27.csv")
 DF=pd.DataFrame(cart_pos_traj1)
-DF.to_csv("Experiment_6_STL_Smooth_traj1_Cart_Pos_07-27.csv")
+DF.to_csv("Experiment_7_STL_Smooth_traj1_Cart_Pos_07-27.csv")
 DF=pd.DataFrame(cart_vel_traj1)
-DF.to_csv("Experiment_6_STL_Smooth_traj1_Cart_Vel_07-27.csv")
+DF.to_csv("Experiment_7_STL_Smooth_traj1_Cart_Vel_07-27.csv")
+
+
+#To load files into lists
+BO_Failure_count=pd.read_csv("/home/josh/Cart_Pole_Results/July_19_2022/Test 6: Both/Experiment_6_Time_Smooth_Failure_Count_07-18.csv")
+BO=BO_Failure_count.to_numpy()
+BO_count=[]
+for i in range(10):
+    rand_count.append(np.array(rand).T[1][i])
+    
+    
+#Best for Random Sampling and BO
+Random_mean=np.mean(rand_count)
+BO_mean=np.mean(BO_count)
+BO_std=np.std(BO_count)
+Random_std=np.std(rand_count)
+Method=['Random Sampling', 'Bayeisan Optimization']
+x_pos=np.arange(len(Method))
+Means_Failure_Modes=[Random_mean,BO_mean]
+Error=[Random_std,BO_std]
+plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
+    plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
+    plt.title('Failure Modes Found for Cart Pole Using Random Sampling and BO'),\
+    plt.grid(True,axis='y'), plt.show()
+
+Test_num=['1','2','3','4','5','6','7','8','9','10']
+X_axis=np.arange(len(Test_num))
+plt.bar(X_axis+0,rand_count,0.2,label='Random Sampling')
+plt.bar(X_axis-0.2,BO_count,0.2,label='Bayesian Optimization')
+plt.xticks(X_axis,Test_num)
+plt.xlabel("Tests")
+plt.ylabel("Failure Modes Found")
+plt.title("Failure Modes Per Test: Cart Pole")
+plt.legend()
+plt.show()
 """
