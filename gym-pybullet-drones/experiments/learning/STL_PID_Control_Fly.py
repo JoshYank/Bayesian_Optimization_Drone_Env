@@ -265,21 +265,19 @@ rand_nums = [
  278535713,
  ]
 
-rand_nums2=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-rand_nums3=[20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44]
-rand_nums4=[101, 113, 134, 156, 194, 202, 213, 111, 129, 200, 91, 81, 82, 71, 78]
-rand_nums5=[5085, 8991, 1635, 7805, 7187, 8645, 8888, 5520, 6446, 1714, 7053,
-       4131, 7929, 7799, 5766]
-rand_nums6=[1461, 8194, 6927, 5075, 4903, 3799, 6268, 8155, 5502, 1187, 7833,
-       3916, 7906, 3815, 3587]
-rand_nums7=[64846, 28856, 43210, 70661, 14700, 21044, 58191, 17243, 24958, 80194,
-       65943, 58561, 24073, 68194, 69265]
+rand_nums2=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+rand_nums3=[20, 22, 24, 26, 28, 30, 32, 34, 36, 38]
+rand_nums4=[101, 113, 134, 156, 194, 202, 213, 111, 129, 200]
+rand_nums5=[5085, 8991, 1635, 7805, 7187, 8645, 8888, 5520, 6446, 1714,]
+rand_nums6=[1461, 8194, 6927, 5075, 4903, 3799, 6268, 8155, 5502, 1187]
+rand_nums7=[64846, 28856, 43210, 70661, 14700, 21044, 58191, 17243, 24958, 80194]
 rand_nums8=[54239, 69118, 51184, 57468, 57945, 78075, 34142, 78062, 33150,
-            64048, 65056, 48293, 35515, 50506, 20161]
-rand_nums9=[63951, 36835, 59249, 17176, 32123, 54118, 79720, 64639, 81307, 16913, 
-       66005, 22091, 78671, 29591, 74848]
+            64048]
+rand_nums9=[63951, 36835, 59249, 17176, 32123, 54118, 79720, 64639, 81307, 16913]
 rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
-       127016, 390172, 231790, 414417, 561875, 376595, 632379]
+       127016, 390172]
+rand_nums11=[61,18,2,33,31,49,81,17,11,131]
+rand_nums12=[65,13,19,38,32,99,84,22,41,143]
 rand_nums_test=[172857]
 
 
@@ -340,7 +338,7 @@ def pred2(traj):
     return min(min_roll,min_pitch)
 
 
-for r in rand_nums:
+for r in rand_nums10:
     """
     np.random.seed(r)
     node0=pred_node(f=pred1)
@@ -500,10 +498,10 @@ gx.set_ylabel('Robustness')
 
 #To Save data, change 1B and date at end
 DF=pd.DataFrame(rand_Failure_count)
-DF.to_csv("Drone_Experiment_2_Safety_Random_Failure_Count_08-13.csv")
+DF.to_csv("Drone_Experiment_4_Safety_Random_Failure_Count_08-14.csv")
 
 DF=pd.DataFrame(ns_Failure_count)
-DF.to_csv("Drone_Experiment_2_Safety_BO_Failure_Count_08-13.csv")
+DF.to_csv("Drone_Experiment_4_Safety_BO_Failure_Count_08-14.csv")
 
 DF=pd.DataFrame(smooth_Failure_count)
 DF.to_csv("Drone_Experiment_1_Safety_Smooth_Failure_Count_08-10.csv")
