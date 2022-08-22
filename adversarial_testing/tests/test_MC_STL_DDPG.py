@@ -187,7 +187,7 @@ def pred2(traj):
             Until_Con+=0
         if Until_Con<1:
             Robustness.append(0.05-abs(velocity))
-        if Until_Con<1:
+        if Until_Con>=1:
             Robustness.append(1)
     return min(Robustness)
 
