@@ -278,6 +278,7 @@ rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
        127016, 390172]
 rand_nums11=[61,18,2,33,31,49,81,17,11,131]
 rand_nums12=[65,13,19,38,32,99,84,22,41,143]
+rand_nums13=[375686, 31957, 26589, 180738, 281078, 88509, 499107, 466051, 478311, 69059]
 rand_nums_test=[172857]
 
 
@@ -338,93 +339,134 @@ def pred2(traj):
     return min(min_roll,min_pitch)
 
 
-for r in rand_nums10:
-    """
-    np.random.seed(r)
-    node0=pred_node(f=pred1)
-    node1=pred_node(f=pred2)
-    node2=min_node(children=[node0,node1])
-    
-    #node3=pred_node(f=pred3)
-    #node4=min_node(children=[node0,node3])
+C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+NS_Details=[]
+NS_Param=[]
+NS_Robust=[]
+Rand_Details=[]
+Rand_Param=[]
+Rand_Rob=[]
+for a in range(len(C)):
 
-    TM_smooth = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                     f_tree=node2, init_samples=20, with_smooth=True,
-                     with_random=False, with_ns=False,
-                     optimize_restarts=1, exp_weight=2)
-    TM_smooth.initialize()
     
-    TM_smooth.run_BO(150)
+    smooth_details_r1=[]
+    ns_details_r3 = []
+    random_details_r3 = []
     
-    smooth_Failure_count.append(TM_smooth.smooth_count)
+    smooth_results=[]
+    ns_results=[]
+    random_results=[]
     
-    smooth_vals = np.array(TM_smooth.f_acqu.find_GP_func())
-    smooth_details_r1.append([TM_smooth.smooth_count,
-                              TM_smooth.smooth_min_x,
-                              TM_smooth.smooth_min_val, TM_smooth.smooth_min_loc])
+    smooth_Failure_count=[]
+    rand_Failure_count=[]
+    ns_Failure_count=[]
     
-    #smooth_results.append(TM_smooth.smooth_count, )
-    #del TM_smooth
-    #print(r, smooth_details_r1[-1])
-    """
-#for r in rand_nums:
+    ns_param=[]
+    ns_robust=[]
+    random_param=[]
+    random_robust=[]
     
-    np.random.seed(r)
-    node0_rand=pred_node(f=pred1)
+    for r in C[a]:
+        """
+        np.random.seed(r)
+        node0=pred_node(f=pred1)
+        node1=pred_node(f=pred2)
+        node2=min_node(children=[node0,node1])
+        
+        #node3=pred_node(f=pred3)
+        #node4=min_node(children=[node0,node3])
     
-    node1_rand=pred_node(f=pred2)
-    node2_rand=min_node(children=[node0_rand,node1_rand])
-    """
-    node3_rand=pred_node(f=pred3)
-    node4_rand=min_node(children=[node0_rand,node3_rand])
-    """
-    TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                     f_tree=node2_rand, init_samples=20, with_smooth=False,
-                     with_random=True, with_ns=False,
-                     optimize_restarts=1, exp_weight=2)
-    TM_rand.initialize()
+        TM_smooth = test_module(bounds=bounds, sut=lambda x0: sut(x0),
+                         f_tree=node2, init_samples=20, with_smooth=True,
+                         with_random=False, with_ns=False,
+                         optimize_restarts=1, exp_weight=2)
+        TM_smooth.initialize()
+        
+        TM_smooth.run_BO(150)
+        
+        smooth_Failure_count.append(TM_smooth.smooth_count)
+        
+        smooth_vals = np.array(TM_smooth.f_acqu.find_GP_func())
+        smooth_details_r1.append([TM_smooth.smooth_count,
+                                  TM_smooth.smooth_min_x,
+                                  TM_smooth.smooth_min_val, TM_smooth.smooth_min_loc])
+        
+        #smooth_results.append(TM_smooth.smooth_count, )
+        #del TM_smooth
+        #print(r, smooth_details_r1[-1])
+        """
+    #for r in rand_nums:
+        
+        np.random.seed(r)
+        node0_rand=pred_node(f=pred1)
+        
+        node1_rand=pred_node(f=pred2)
+        node2_rand=min_node(children=[node0_rand,node1_rand])
+        """
+        node3_rand=pred_node(f=pred3)
+        node4_rand=min_node(children=[node0_rand,node3_rand])
+        """
+        """
+        TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(x0),
+                         f_tree=node0_rand, init_samples=20, with_smooth=False,
+                         with_random=True, with_ns=False,
+                         optimize_restarts=1, exp_weight=2)
+        TM_rand.initialize()
+        
+        TM_rand.run_BO(100)
+        
+        rand_Failure_count.append(TM_rand.rand_count)
+        
+        rand_vals = np.array(TM_rand.random_Y)
+        random_details_r3.append([TM_rand.rand_count,
+                              TM_rand.rand_min_x,
+                              TM_rand.rand_min_val, TM_rand.rand_min_loc])
+        random_param.append(TM_rand.rand_min_x)
+        random_robust.append(TM_rand.rand_min_val)
+        """
+        #print(r, random_details_r3[-1])
+        #del TM_rand
+    #for r in rand_nums:
+        
+        np.random.seed(r)
+        node0_ns=pred_node(f=pred1)
+        
+        node1_ns=pred_node(f=pred2)
+        node2_ns=min_node(children=[node0_ns,node1_ns])
+        
+        """
+        node3_ns=pred_node(f=pred3)
+        node4_ns=min_node(children=[node0_ns,node3_ns])
+        """
+        
     
-    TM_rand.run_BO(100)
+        TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(x0),
+                         f_tree=node1_ns, init_samples=20, with_smooth=False,
+                         with_random=False, with_ns=True,
+                         optimize_restarts=1, exp_weight=2)
+        TM_ns.initialize()
+        
+        TM_ns.run_BO(100)
+        
+        ns_Failure_count.append(TM_ns.ns_count)
+        
+        ns_smooth_vals = np.array(TM_ns.ns_GP.Y)
+        ns_details_r3.append([TM_ns.ns_count,
+                            TM_ns.ns_min_x,
+                            TM_ns.ns_min_val, TM_ns.ns_min_loc])
+        ns_param.append(TM_ns.ns_min_x)
+        ns_robust.append(TM_ns.ns_min_val)
+    NS_Details.append(ns_Failure_count)
+    NS_Param.append(ns_param)
+    NS_Robust.append(ns_robust)
+    Rand_Details.append(rand_Failure_count)
+    Rand_Param.append(random_param)
+    Rand_Rob.append(random_robust)
+        
     
-    rand_Failure_count.append(TM_rand.rand_count)
-    
-    rand_vals = np.array(TM_rand.random_Y)
-    random_details_r3.append([TM_rand.rand_count,
-                          TM_rand.rand_min_x,
-                          TM_rand.rand_min_val, TM_rand.rand_min_loc])
-    #print(r, random_details_r3[-1])
-    #del TM_rand
-#for r in rand_nums:
-    
-    np.random.seed(r)
-    node0_ns=pred_node(f=pred1)
-    
-    node1_ns=pred_node(f=pred2)
-    node2_ns=min_node(children=[node0_ns,node1_ns])
-    """
-    node3_ns=pred_node(f=pred3)
-    node4_ns=min_node(children=[node0_ns,node3_ns])
-    """
-
-    TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                     f_tree=node2_ns, init_samples=20, with_smooth=False,
-                     with_random=False, with_ns=True,
-                     optimize_restarts=1, exp_weight=2)
-    TM_ns.initialize()
-    
-    TM_ns.run_BO(100)
-    
-    ns_Failure_count.append(TM_ns.ns_count)
-    
-    ns_smooth_vals = np.array(TM_ns.ns_GP.Y)
-    ns_details_r3.append([TM_ns.ns_count,
-                        TM_ns.ns_min_x,
-                        TM_ns.ns_min_val, TM_ns.ns_min_loc])
-    
-
 #print(smooth_Failure_count,rand_Failure_count,ns_Failure_count)
 #Making bar plots with error bars
-Random_mean=np.mean(rand_Failure_count)
+#Random_mean=np.mean(rand_Failure_count)
 
 #Smooth_mean=np.mean(smooth_Failure_count)
 
@@ -434,35 +476,48 @@ NS_mean=np.mean(ns_Failure_count)
 
 NS_std=np.std(ns_Failure_count)
 
-Random_std=np.std(rand_Failure_count)
+#Random_std=np.std(rand_Failure_count)
 
-Method=['Random Sampling','Non-Smooth GP']
+#Method=['Random Sampling','Bayesian Optimization']
+Method=['Bayesian Optimization']
 x_pos=np.arange(len(Method))
 
-Means_Failure_Modes=[Random_mean,NS_mean]
-
-Error=[Random_std,NS_std]
+#Means_Failure_Modes=[Random_mean,NS_mean]
+#Error=[Random_std,NS_std]
+Means_Failure_Modes=[NS_mean]
+Error=[NS_std]
 
 plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
     plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
     plt.title('Failure Modes Found:  BO v. Random Sampling'),\
     plt.grid(True,axis='y'), plt.show()
-
+"""
+Method=['Random Sampling']
+Means_Failure_Modes=[Random_mean]
+x_pos=np.arange(len(Method))
+Error=[Random_std]
+plt.bar(x_pos, Means_Failure_Modes, yerr=Error, align='center', alpha=0.5, ecolor='black', capsize=10),\
+    plt.ylabel('Failure Modes Found'),plt.xticks(x_pos,Method),\
+    plt.title('Failure Modes Found: Random Sampling'),\
+    plt.grid(True,axis='y'), plt.show()
+"""
 """
 Test_num=['1','2','3','4','5','6','7','8','9','10']
 X_axis=np.arange(len(Test_num))
 
-plt.bar(X_axis-0.2,smooth_Failure_count,0.2,label='Smooth BO')
-plt.bar(X_axis+0,rand_Failure_count,0.2,label='Random Sampling BO')
-plt.bar(X_axis+0.2,ns_Failure_count,0.2,label='Non-Smooth BO')
+#plt.bar(X_axis-0.2,smooth_Failure_count,0.2,label='Smooth BO')
+plt.bar(X_axis+0.2,rand_Failure_count,0.2,label='Random Sampling')
+plt.bar(X_axis+0,ns_Failure_count,0.2,label='Bayesian Optimization')
 plt.xticks(X_axis,Test_num)
 plt.xlabel("Tests")
 plt.ylabel("Failure Modes Found")
 plt.title("Failure Modes Per Test")
 plt.legend()
 plt.show()
+"""
 
 #To plot robustness over BO iteration
+"""
 time_range_iteration=np.array(list(range(1,len(TM_smooth.f_acqu.Y)+1)))
 fig4=plt.figure()
 ex=fig4.add_subplot()
@@ -495,7 +550,7 @@ gx.set_title('Random Sampling Robustness v. Iteration')
 gx.legend(['Random_Sampling_Robustness'])
 gx.set_xlabel('BO Iteration')
 gx.set_ylabel('Robustness')
-
+"""
 #To Save data, change 1B and date at end
 DF=pd.DataFrame(rand_Failure_count)
 DF.to_csv("Drone_Experiment_4_Safety_Random_Failure_Count_08-14.csv")
@@ -506,6 +561,7 @@ DF.to_csv("Drone_Experiment_4_Safety_BO_Failure_Count_08-14.csv")
 DF=pd.DataFrame(smooth_Failure_count)
 DF.to_csv("Drone_Experiment_1_Safety_Smooth_Failure_Count_08-10.csv")
 
+"""
 # safest traj
 smooth_safest_params=TM_smooth.smooth_X[smooth_vals.argmax()]
 traj_smooth_safe=[]
