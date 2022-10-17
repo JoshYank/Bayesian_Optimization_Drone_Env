@@ -28,7 +28,7 @@ env = gym.make('CartPole-v1')
 model = PPO1.load("ppo1_cartpole")
 
 
-def compute_traj(max_steps,ead=False, **kwargs):
+def compute_traj(max_steps,ead=True, **kwargs):
     env.reset()
     if 'init_state' in kwargs:
         ob = kwargs['init_state']
@@ -42,6 +42,8 @@ def compute_traj(max_steps,ead=False, **kwargs):
         env.env.polemass_length = env.env.masspole * env.env.length
     if 'force_mag' in kwargs:
         env.env.force_mag = kwargs['force_mag']
+    env.env.theta_threshold_radians=np.pi/2
+    env.env.x_threshold=10
     traj = [ob]
     reward = 0
     iters= 0
@@ -56,7 +58,7 @@ def compute_traj(max_steps,ead=False, **kwargs):
     additional_data = {'reward':reward, 'mass':env.env.total_mass, 'iters':iters}
     return traj, additional_data
 
-def sut(max_steps,x0, ead=False):
+def sut(max_steps,x0, ead=True):
     return compute_traj(max_steps,init_state=x0[0:4],ead=ead)#, masspole=x0[4],
                         #length=x0[5], force_mag=x0[6], ead=ead)
 
@@ -107,7 +109,7 @@ rand_nums_test=[172857]
 # given that the closed loop system is deterministic
 #bounds = [(-0.175, 0.175)] * 4 # Bounds on the state
 bounds=[(-0.3,0.3)] #x pos
-bounds.append((-0.8,0.8)) #velocity
+bounds.append((-0.05,0.05)) #velocity
 bounds.append((-0.26,0.26)) #angle
 bounds.append((-0.05,0.05)) #ang vel
 #bounds.append((0.05, 0.15)) # Bounds on the mass of the pole
@@ -126,102 +128,157 @@ smooth_Failure_count=[]
 rand_Failure_count=[]
 ns_Failure_count=[]
 
+XP_All=[]
+ANG_All=[]
+VEL_ALL=[]
+
 # maneuver is deemed unsafe if until some time the pole angle is larger than 20
 #while the cart’s horizontal position is more than 0.3.
 def pred1(traj):
     traj1 = traj[0]
     Robustness=[]
+    XP=[]
+    ANG=[]
     for i in range (len(traj1)):
         #x_pos=np.array(traj1[0]).T[i]
         #angle=np.array(traj[0]).T[i]
         x_pos=traj1[i][0]
         angle=traj1[i][2]
+        XP.append(x_pos)
+        ANG.append(angle)
+        
         if x_pos <= -0.3 or x_pos>=0.3:
             Robustness.append(0.349066-abs(angle))
         if x_pos>-0.3 and x_pos<0.3:
             Robustness.append(1/abs(angle))
+    #XP_All.append(XP)
+    #ANG_All.append(ANG)
     return min(Robustness)
 
 def pred2(traj):
     traj1 = traj[0]
     Robustness=[]
+    VEL=[]
     for i in range (len(traj1)):
         #x_pos=np.array(traj1[0]).T[i]
         #angle=np.array(traj[0]).T[i]
         x_vel=traj1[i][1]
+        VEL.append(x_vel)
         Robustness.append(2-abs(x_vel))
+    #VEL_ALL.append(VEL)
     return min(Robustness)
 
-for r in rand_nums10:
-    """
-    np.random.seed(r)
-    node0=pred_node(f=pred1)
-    node1=pred_node(f=pred2)
-    node2=min_node(children=[node0,node1])
+C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+#C=[rand_nums]
+NS_Details=[]
+NS_Param=[]
+NS_Robust=[]
+Rand_Details=[]
+Rand_Param=[]
+Rand_Rob=[]
 
-    TM_smooth = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                     f_tree=node2, init_samples=20, with_smooth=True,
-                     with_random=False, with_ns=False,
-                     optimize_restarts=1, exp_weight=2)
-    TM_smooth.initialize()
-    
-    TM_smooth.run_BO(100)
-    
-    smooth_Failure_count.append(TM_smooth.smooth_count)
-    
-    smooth_vals = np.array(TM_smooth.f_acqu.find_GP_func())
-    smooth_details.append([TM_smooth.smooth_count,
-                              TM_smooth.smooth_min_x,
-                              TM_smooth.smooth_min_val, TM_smooth.smooth_min_loc])
-    
-    #smooth_results.append(TM_smooth.smooth_count, )
-    #del TM_smooth
-    #print(r, smooth_details_r1[-1])
-    """
-#for r in rand_nums:
-    
-    np.random.seed(r)
-    node0_rand=pred_node(f=pred1)
-    node1_rand=pred_node(f=pred2)
-    node2_rand=min_node(children=[node0_rand,node1_rand])
+for a in range(len(C)):
 
-    TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                     f_tree=node2_rand, init_samples=20, with_smooth=False,
-                     with_random=True, with_ns=False,
-                     optimize_restarts=1, exp_weight=2)
-    TM_rand.initialize()
     
-    TM_rand.run_BO(100)
+    smooth_details_r1=[]
+    ns_details_r3 = []
+    random_details_r3 = []
     
-    rand_Failure_count.append(TM_rand.rand_count)
+    smooth_results=[]
+    ns_results=[]
+    random_results=[]
     
-    rand_vals = np.array(TM_rand.random_Y)
-    random_details.append([TM_rand.rand_count,
-                          TM_rand.rand_min_x,
-                          TM_rand.rand_min_val, TM_rand.rand_min_loc])
-    #print(r, random_details_r3[-1])
-    #del TM_rand
-#for r in rand_nums:
+    smooth_Failure_count=[]
+    rand_Failure_count=[]
+    ns_Failure_count=[]
     
-    np.random.seed(r)
-    node0_ns=pred_node(f=pred1)
-    node1_ns=pred_node(f=pred2)
-    node2_ns=min_node(children=[node0_ns,node1_ns])
+    ns_param=[]
+    ns_robust=[]
+    random_param=[]
+    random_robust=[]
+    
 
-    TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                     f_tree=node2_ns, init_samples=20, with_smooth=False,
-                     with_random=False, with_ns=True,
-                     optimize_restarts=1, exp_weight=2)
-    TM_ns.initialize()
+    for r in C[a]:
+        """
+        np.random.seed(r)
+        node0=pred_node(f=pred1)
+        node1=pred_node(f=pred2)
+        node2=min_node(children=[node0,node1])
     
-    TM_ns.run_BO(100)
+        TM_smooth = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
+                         f_tree=node2, init_samples=20, with_smooth=True,
+                         with_random=False, with_ns=False,
+                         optimize_restarts=1, exp_weight=2)
+        TM_smooth.initialize()
+        
+        TM_smooth.run_BO(100)
+        
+        smooth_Failure_count.append(TM_smooth.smooth_count)
+        
+        smooth_vals = np.array(TM_smooth.f_acqu.find_GP_func())
+        smooth_details.append([TM_smooth.smooth_count,
+                                  TM_smooth.smooth_min_x,
+                                  TM_smooth.smooth_min_val, TM_smooth.smooth_min_loc])
+        
+        #smooth_results.append(TM_smooth.smooth_count, )
+        #del TM_smooth
+        #print(r, smooth_details_r1[-1])
+        """
+    #for r in rand_nums:
+        """
+        np.random.seed(r)
+        node0_rand=pred_node(f=pred1)
+        node1_rand=pred_node(f=pred2)
+        node2_rand=min_node(children=[node0_rand,node1_rand])
     
-    ns_Failure_count.append(TM_ns.ns_count)
+        TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
+                         f_tree=node2_rand, init_samples=20, with_smooth=False,
+                         with_random=True, with_ns=False,
+                         optimize_restarts=1, exp_weight=2)
+        TM_rand.initialize()
+        
+        TM_rand.run_BO(100)
+        
+        rand_Failure_count.append(TM_rand.rand_count)
+        
+        rand_vals = np.array(TM_rand.random_Y)
+        random_details.append([TM_rand.rand_count,
+                              TM_rand.rand_min_x,
+                              TM_rand.rand_min_val, TM_rand.rand_min_loc])
+        random_param.append(TM_rand.rand_min_x)
+        random_robust.append(TM_rand.rand_min_val)
+        """
+        #print(r, random_details_r3[-1])
+        #del TM_rand
+    #for r in rand_nums:
+        
+        np.random.seed(r)
+        node0_ns=pred_node(f=pred1)
+        node1_ns=pred_node(f=pred2)
+        node2_ns=min_node(children=[node0_ns,node1_ns])
     
-    ns_smooth_vals = np.array(TM_ns.ns_GP.Y)
-    ns_details.append([TM_ns.ns_count,
-                        TM_ns.ns_min_x,
-                        TM_ns.ns_min_val, TM_ns.ns_min_loc])
+        TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
+                         f_tree=node0_ns, init_samples=20, with_smooth=False,
+                         with_random=False, with_ns=True,
+                         optimize_restarts=1, exp_weight=2)
+        TM_ns.initialize()
+        
+        TM_ns.run_BO(100)
+        
+        ns_Failure_count.append(TM_ns.ns_count)
+        
+        ns_smooth_vals = np.array(TM_ns.ns_GP.Y)
+        ns_details.append([TM_ns.ns_count,
+                            TM_ns.ns_min_x,
+                            TM_ns.ns_min_val, TM_ns.ns_min_loc])
+        ns_param.append(TM_ns.ns_min_x)
+        ns_robust.append(TM_ns.ns_min_val)
+    NS_Details.append(ns_Failure_count)
+    NS_Param.append(ns_param)
+    NS_Robust.append(ns_robust)
+    #Rand_Details.append(rand_Failure_count)
+    #Rand_Param.append(random_param)
+    #Rand_Rob.append(random_robust)
 
 Random_mean=np.mean(rand_Failure_count)
 
