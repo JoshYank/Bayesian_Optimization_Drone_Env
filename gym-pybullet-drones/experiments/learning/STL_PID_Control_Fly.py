@@ -252,6 +252,7 @@ def sut(x0, **kwargs):
 #Bayesian Optimization
 from adversarial_testing import pred_node, max_node, min_node, test_module
 from adversarial_testing.utils import sample_from
+from adversarial_testing import optimizers
 rand_nums = [
  3188388221,
  1954593344,
@@ -279,6 +280,7 @@ rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
 rand_nums11=[61,18,2,33,31,49,81,17,11,131]
 rand_nums12=[65,13,19,38,32,99,84,22,41,143]
 rand_nums13=[375686, 31957, 26589, 180738, 281078, 88509, 499107, 466051, 478311, 69059]
+rand_nums9_A=[64639, 81307, 16913]
 rand_nums_test=[172857]
 
 
@@ -339,7 +341,8 @@ def pred2(traj):
     return min(min_roll,min_pitch)
 
 
-C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,
+   rand_nums7,rand_nums8,rand_nums9,rand_nums10]
 NS_Details=[]
 NS_Param=[]
 NS_Robust=[]
@@ -402,14 +405,15 @@ for a in range(len(C)):
         
         node1_rand=pred_node(f=pred2)
         node2_rand=min_node(children=[node0_rand,node1_rand])
+        
+       # node3_rand=pred_node(f=pred3)
+        #node4_rand=min_node(children=[node0_rand,node3_rand])
         """
-        node3_rand=pred_node(f=pred3)
-        node4_rand=min_node(children=[node0_rand,node3_rand])
         """
         """
         TM_rand = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                         f_tree=node0_rand, init_samples=20, with_smooth=False,
-                         with_random=True, with_ns=False,
+                         f_tree=node2_rand, init_samples=20, with_smooth=False,
+                         with_random=True, with_ns=False, optimizer=optimizers.direct_opt(bounds),
                          optimize_restarts=1, exp_weight=2)
         TM_rand.initialize()
         
@@ -439,11 +443,11 @@ for a in range(len(C)):
         node4_ns=min_node(children=[node0_ns,node3_ns])
         """
         
-    
+        
         TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(x0),
-                         f_tree=node1_ns, init_samples=20, with_smooth=False,
-                         with_random=False, with_ns=True,
-                         optimize_restarts=1, exp_weight=2)
+                         f_tree=node2_ns, init_samples=20, with_smooth=False,
+                         with_random=False, with_ns=True,  optimizer=optimizers.direct_opt(bounds),
+                         optimize_restarts=1, exp_weight=2,)
         TM_ns.initialize()
         
         TM_ns.run_BO(100)
@@ -456,12 +460,14 @@ for a in range(len(C)):
                             TM_ns.ns_min_val, TM_ns.ns_min_loc])
         ns_param.append(TM_ns.ns_min_x)
         ns_robust.append(TM_ns.ns_min_val)
+        
     NS_Details.append(ns_Failure_count)
     NS_Param.append(ns_param)
     NS_Robust.append(ns_robust)
     Rand_Details.append(rand_Failure_count)
     Rand_Param.append(random_param)
     Rand_Rob.append(random_robust)
+    print("##################################################################")
         
     
 #print(smooth_Failure_count,rand_Failure_count,ns_Failure_count)
