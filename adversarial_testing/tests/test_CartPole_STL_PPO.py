@@ -25,6 +25,8 @@ from stable_baselines.common.policies import MlpPolicy
 from stable_baselines import PPO1
 
 env = gym.make('CartPole-v1')
+seed = 8902077161928034768
+env.seed(seed)
 model = PPO1.load("ppo1_cartpole")
 
 
@@ -42,8 +44,8 @@ def compute_traj(max_steps,ead=True, **kwargs):
         env.env.polemass_length = env.env.masspole * env.env.length
     if 'force_mag' in kwargs:
         env.env.force_mag = kwargs['force_mag']
-    env.env.theta_threshold_radians=np.pi/2
-    env.env.x_threshold=10
+    env.env.theta_threshold_radians=0.418
+    env.env.x_threshold=4.8
     traj = [ob]
     reward = 0
     iters= 0
@@ -78,6 +80,7 @@ def cost_func(X):
 # ------------------------------------------------------------------------------
 from adversarial_testing import pred_node, max_node, min_node, test_module
 from adversarial_testing.utils import sample_from
+from adversarial_testing import optimizers
 rand_nums = [2440271967,
  3816968049,
  3160626546,
@@ -168,7 +171,8 @@ def pred2(traj):
     #VEL_ALL.append(VEL)
     return min(Robustness)
 
-C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+#C=[rand_nums,
+C=[rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
 #C=[rand_nums]
 NS_Details=[]
 NS_Param=[]
@@ -237,7 +241,7 @@ for a in range(len(C)):
                          optimize_restarts=1, exp_weight=2)
         TM_rand.initialize()
         
-        TM_rand.run_BO(100)
+        TM_rand.run_BO(1000)
         
         rand_Failure_count.append(TM_rand.rand_count)
         
@@ -258,12 +262,12 @@ for a in range(len(C)):
         node2_ns=min_node(children=[node0_ns,node1_ns])
     
         TM_ns = test_module(bounds=bounds, sut=lambda x0: sut(200,x0),
-                         f_tree=node0_ns, init_samples=20, with_smooth=False,
-                         with_random=False, with_ns=True,
+                         f_tree=node1_ns, init_samples=20, with_smooth=False,
+                         with_random=False, with_ns=True, #optimizer=optimizers.direct_opt(bounds),
                          optimize_restarts=1, exp_weight=2)
         TM_ns.initialize()
         
-        TM_ns.run_BO(100)
+        TM_ns.run_BO(1000)
         
         ns_Failure_count.append(TM_ns.ns_count)
         
@@ -276,9 +280,9 @@ for a in range(len(C)):
     NS_Details.append(ns_Failure_count)
     NS_Param.append(ns_param)
     NS_Robust.append(ns_robust)
-    #Rand_Details.append(rand_Failure_count)
-    #Rand_Param.append(random_param)
-    #Rand_Rob.append(random_robust)
+    Rand_Details.append(rand_Failure_count)
+    Rand_Param.append(random_param)
+    Rand_Rob.append(random_robust)
 
 Random_mean=np.mean(rand_Failure_count)
 
