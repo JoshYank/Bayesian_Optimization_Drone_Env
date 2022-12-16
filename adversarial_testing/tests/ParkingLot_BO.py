@@ -102,15 +102,17 @@ rand_nums10=[347957, 510020, 545416, 613511, 673274, 619204, 630790, 627544,
        127016, 390172]
 rand_nums11=[61,18,2,33,31,49,81,17,11,131]
 rand_nums12=[65,13,19,38,32,99,84,22,41,143]
-rand_nums_test=[172857]
+rand_nums_test=[1732]
 
 #bounds of uncertainty
+#bounds=[(-50,50)] #x-pos car
 bounds=[(-50,50)] #x-pos car
-bounds.append((-50,50)) #y-pos car
+bounds.append((-30,30)) #y-pos car
 bounds.append((-1.57,1.57)) #car heading
-bounds.append((-10,10)) #car speed (m/s)
+bounds.append((-5,5)) #car speed (m/s)
+#bounds.append((-50,50)) #x-pos goal
 bounds.append((-50,50)) #x-pos goal
-bounds.append((-50,50)) #y-pos goal
+bounds.append((-30,30)) #y-pos goal
 
 #predicates
 def pred1(traj):
@@ -156,7 +158,8 @@ def pred2(traj):
     old_theta=np.arcsin(traj1[0]['observation'][5])
     tot_theta=0
     #Max_Ang=4.712
-    Max_Ang=12.6
+    #Max_Ang=12.6
+    Max_Ang=9.60
     for i in range (len(traj1)):
         theta=np.arcsin(traj1[i]['observation'][5])
         d_theta=abs(old_theta-theta)
@@ -167,7 +170,8 @@ def pred2(traj):
     return min(Robustness)
 
 #BO set up
-C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+#C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5]
 #C=[rand_nums_test]
 NS_Details=[]
 NS_Param=[]
@@ -176,6 +180,7 @@ NS_worst_sim=[]
 Rand_Details=[]
 Rand_Param=[]
 Rand_Rob=[]
+Rand_worst_sim=[]
 
 Start_time=[]
 End_time=[]
@@ -201,6 +206,7 @@ for a in range(len(C)):
     ns_robust=[]
     random_param=[]
     random_robust=[]
+    rand_worst_sim=[]
     
     for r in C[a]:
         #for r in rand_nums:
@@ -216,9 +222,10 @@ for a in range(len(C)):
                          optimize_restarts=1, exp_weight=2)
         TM_rand.initialize()
         
-        TM_rand.run_BO(200)
+        TM_rand.run_BO(500)
         
         rand_Failure_count.append(TM_rand.rand_count)
+        rand_worst_sim.append(TM_rand.rand_min_loc)
         
         rand_vals = np.array(TM_rand.random_Y)
         random_details.append([TM_rand.rand_count,
@@ -242,7 +249,7 @@ for a in range(len(C)):
                          optimize_restarts=1, exp_weight=2)
         TM_ns.initialize()
         
-        TM_ns.run_BO(200)
+        TM_ns.run_BO(500)
         
         ns_Failure_count.append(TM_ns.ns_count)
         ns_worst_sim.append(TM_ns.ns_min_loc)
@@ -263,6 +270,7 @@ for a in range(len(C)):
     Rand_Details.append(rand_Failure_count)
     Rand_Param.append(random_param)
     Rand_Rob.append(random_robust)
+    Rand_worst_sim.append(rand_worst_sim)
     print('###################################################################')
     
 #---------------------------------------------------------------------------------------
