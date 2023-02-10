@@ -45,10 +45,11 @@ def sut(x0):
 #------------------------------------------------------------------------------   
 from adversarial_testing import pred_node, max_node, min_node, test_module
 from adversarial_testing.utils import sample_from
-rand_nums = [
- 3188388221,
- 1954593344,
- 2154016205,
+#rand_nums = [
+ #3188388221,
+ #1954593344,
+rand_nums=[
+ 21016205,
  3894811078,
  3493033583,
  3248332584,
@@ -59,6 +60,7 @@ rand_nums = [
  ]
 rand_nums2=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 rand_nums3=[20, 22, 24, 26, 28, 30, 32, 34, 36, 38]
+rand_nums3=[81, 28, 30, 32, 34, 36, 38]
 rand_nums4=[1221, 113, 134, 156, 19344, 22102, 23413, 1511, 12239, 29800]
 rand_nums5=[5085, 8991, 1635, 7805, 7187, 8645, 8888, 5520, 6446, 171452]
 rand_nums6=[1461, 8194, 6927, 5075, 4903, 3799, 6268, 8155, 5502, 1187]
@@ -80,8 +82,8 @@ rand_nums_test=[17223857]
 bounds = [(0., 100.)] # Bounds on the throttle at t=0
 bounds.append((0., 100.)) # Bounds on throttle at t=15
 #bounds.append((0., 100.)) # Bounds on throttle at t=30
-bounds.append((0., 325.)) # Bounds on brake at t=0
-bounds.append((0., 325.)) # Bounds on brake at t=15
+bounds.append((0., 100.)) # Bounds on brake at t=0
+bounds.append((0., 100.)) # Bounds on brake at t=15
 #bounds.append((0., 325.)) # Bounds on brake at t=30
 
 
@@ -138,8 +140,8 @@ def pred4(traj):
         Robustness.append(velocity[i]-Max_Speed)
     return max(Robustness)
 #BO set up
-C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
-
+#C=[rand_nums,rand_nums2,rand_nums3,rand_nums4,rand_nums5,rand_nums6,rand_nums7,rand_nums8,rand_nums9,rand_nums10]
+C=[rand_nums3,rand_nums4,rand_nums5]
 #C=[rand_nums2]
 #C=[rand_nums_test]
 NS_Details=[]
@@ -180,7 +182,7 @@ for a in range(len(C)):
     
     for r in C[a]:
         #for r in rand_nums:
-        
+        '''
         np.random.seed(r)
         node0_rand=pred_node(f=pred1)
         node1_rand=pred_node(f=pred2)
@@ -204,7 +206,7 @@ for a in range(len(C)):
                               TM_rand.rand_min_val, TM_rand.rand_min_loc])
         random_param.append(TM_rand.rand_min_x)
         random_robust.append(TM_rand.rand_min_val)
-        
+        '''
         #print(r, random_details_r3[-1])
         #del TM_rand
     #for r in rand_nums:
@@ -232,6 +234,7 @@ for a in range(len(C)):
                             TM_ns.ns_min_val, TM_ns.ns_min_loc])
         ns_param.append(TM_ns.ns_min_x)
         ns_robust.append(TM_ns.ns_min_val)
+        
         print('***************************************************************')
         AA+=1
         print(AA)
