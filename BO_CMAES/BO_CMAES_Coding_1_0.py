@@ -20,7 +20,7 @@ class BO_CMAES:
             budget,
             population_size):
         self.spec=spec              #Robustness function with built in simulation
-        self.global_bounds=boundary     #global boundaries of variables
+        self.global_bounds=boundary     #global boundaries of variables [(),(),..]
         self.population_size=population_size #number of iterations per localized model
         
         
