@@ -43,7 +43,7 @@ class BO_CMAES:
             solutions.append((self.global_opt.X[_],self.global_opt.Y[_]))
         self.CMA_optimizer.tell(solutions)
         self.Global_Min_Robust=self.global_opt.Y.min()
-        
+        #--------------------------------------------------
         sigma=self.CMA_optimizer._sigma
         mean=self.CMA_optimizer._mean
         variance=[]
