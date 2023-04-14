@@ -17,10 +17,11 @@ def quadratic(x):
     return (x[:,0] - 3) ** 2 + (10 * (x[:,1] + 2)) ** 2
 bounds=np.array([[-10,10],[-10,10]])
 
-import BO_CMAES
-A=BO_CMAES()
-A.initialize()
-A.run_BO_CMA()
+def six_hump_camel(x):
+    return (4-2.1*(x[:,0])**2+((x[:,0]**4)/3))*(x[:,0])**2+x[:,0]*x[:,1]+(-4+4*(x[:,1]**2))*(x[:,1]**2)
+    
+bounds=np.array([[-3,3],[-2,3]])
+
 """
 
 #Code for BO_CMAES
@@ -158,7 +159,12 @@ class BO_CMAES:
             if self.stagnant_count>2:
                 self.G_Jump()
       
-    """
+    def get_violation_count(self):
+        Robustness=[]
+        for i in range(len(self.Global_Sim_Results)):
+            Robustness.append(np.array(self.Global_Sim_Results[i]).T[1])
+        self.Violation_Count=np.sum(np.array(Robustness)<0)
+    
     def plot_2D_sol(self):
         xx=[]
         yy=[]
@@ -178,9 +184,28 @@ class BO_CMAES:
                 xx.append(self.Global_Sim_Results[i][c][0][0])
                 yy.append(self.Global_Sim_Results[i][c][0][1])
             plt.scatter(xx,yy)
-    """
+    def plot_single_gens_2D(self,i):
+            xx=[]
+            yy=[]
+            for c in range(len(self.Global_Sim_Results[i])):
+
+                xx.append(self.Global_Sim_Results[i][c][0][0])
+                yy.append(self.Global_Sim_Results[i][c][0][1])
+            plt.scatter(xx,yy)
           
-        
+    def search_zones_2D(self,i):
+        plt.xlim([self.global_bounds[0][0],self.global_bounds[0][1]])
+        plt.ylim([self.global_bounds[1][0],self.global_bounds[1][1]])
+        #lower line
+        plt.axhline(y=self.Records_bounds[i][1][0], xmin=self.Records_bounds[i][0][0],
+                        xmax=self.Records_bounds[i][0][1])
+        #upper line
+        plt.axhline(y=self.Records_bounds[i][1][1], xmin=self.Records_bounds[i][0][0],
+                        xmax=self.Records_bounds[i][0][1])
+        plt.axvline(x=self.Records_bounds[i][0][0],ymin=self.Records_bounds[i][1][0],
+                    ymax=self.Records_bounds[i][1][1])
+        plt.axvline(x=self.Records_bounds[i][0][1],ymin=self.Records_bounds[i][1][0],
+                    ymax=self.Records_bounds[i][1][1])
 
 #function to define boundaries (both global and local)
 def set_bounds(bounds):
