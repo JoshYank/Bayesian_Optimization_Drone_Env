@@ -79,7 +79,7 @@ class BO_CMAES:
             upper_bounds=self.mean[i]+self.sigma*dev[i]
             self.local_bounds.append([lower_bounds,upper_bounds])
         #set bounds to global bound if value is outside of it
-        self.local_bounds=repair_bounds(self.local_bounds,self.global_bounds)
+        self.local_bounds=repair_bounds_2(self.local_bounds,self.global_bounds)
         self.Records_bounds.append(self.local_bounds)
         self.Record_means.append(self.mean)
         format_local_bounds=set_bounds(self.local_bounds)
@@ -131,7 +131,7 @@ class BO_CMAES:
             upper_bounds=self.mean[i]+self.sigma*dev[i]
             self.local_bounds.append([lower_bounds,upper_bounds])
         #set bounds to global bound if value is outside of it
-        self.local_bounds=repair_bounds(self.local_bounds,self.global_bounds)
+        self.local_bounds=repair_bounds_2(self.local_bounds,self.global_bounds)
         self.Records_bounds.append(self.local_bounds)
         self.Record_means.append(self.mean)
         format_local_bounds=set_bounds(self.local_bounds)
@@ -217,3 +217,10 @@ def repair_bounds(A,bounds):
     A=np.where(A<bounds[:,0],bounds[:,0],A)
     A=np.where(A>bounds[:,1],bounds[:,1],A)
     return A
+def repair_bounds_2(A1,A2):
+    for a in range(len(A2)):
+        if A1[a][0]<A2[a][0]:
+            A1[a][0]=A2[a][0]
+        if A1[a][1]>A2[a][1]:
+            A1[a][1]=A2[a][1]
+    return A1
