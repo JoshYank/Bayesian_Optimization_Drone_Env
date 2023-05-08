@@ -46,7 +46,11 @@ class BO_CMAES:
     def initialize(self):
         #initiate CMAES to calculate variance
         self.Sim_count=0
-        self.CMA_optimizer=CMA(mean=np.zeros(len(self.global_bounds)),sigma=1.3,
+        self.start_mean=np.zeros(len(self.global_bounds))
+        for i in range(len(self.global_bounds)):
+            self.start_mean[i]=np.mean(self.global_bounds[i])
+        
+        self.CMA_optimizer=CMA(mean=self.start_mean,sigma=1.3,
                           bounds=self.global_bounds,
                           population_size=(self.population_size))
         self.CMA_optimizer._mu=self.population_size//4       #set number of best ind for eval
