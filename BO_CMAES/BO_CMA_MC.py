@@ -23,8 +23,10 @@ from stable_baselines.ddpg.policies import MlpPolicy
 from stable_baselines.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise, AdaptiveParamNoiseSpec
 from stable_baselines import DDPG
 
-from BO_CMAES_Coding_1_0 import BO_CMAES
-from BO_CMAES_Coding_1_0 import set_bounds
+from GPyOpt.methods import BayesianOptimization
+
+from BO_CMAES_Coding_1_2 import BO_CMAES
+from BO_CMAES_Coding_1_2 import set_bounds
 
 seed = 8902077161928034768
 env = gym.make('MountainCarContinuous-v0')
@@ -107,8 +109,28 @@ def pred2(x):
     return np.array(Y)
 
 bounds=np.array([[-0.6,-0.4],[-0.025, 0.025],[0.040, 0.075],[0.0005, 0.0025]])
+B=set_bounds(bounds)
 
-Test=BO_CMAES(spec=pred1,boundary=bounds,budget=120,population_size=10)
-Test.initialize()
-Test.run_BO_CMA()
+rand_num=[16245,18762,199,921,2817];
+BO_Robust=[]
+BO_Counter=[]
+BCMA_Robb=[]
+BCMA_Counter=[]
+BCMA_Jump=[]
+for r in rand_num:
+    np.random.seed(r)
+    
+    Test=BO_CMAES(spec=pred1,boundary=bounds,budget=240,population_size=20)
+    Test.initialize()
+    Test.run_BO_CMA()
+    Test.get_violation_count()
+    BCMA_Counter.append(Test.Violation_Count)
+    BCMA_Robb.append(Test.Global_Min_Robust)
+    BCMA_Jump.append(Test.Record_jump)
+    
+    BO_Test=BayesianOptimization(f=pred1,domain=B, acquisition_type='LCB',initial_design_numdata=20)
+    BO_Test.run_optimization(max_iter=120)
+    BO_Counter.append(np.sum(BO_Test.Y<0))
+    BO_Robust.append(BO_Test.Y.min())
+    
 
