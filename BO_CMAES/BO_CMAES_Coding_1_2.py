@@ -92,10 +92,11 @@ class BO_CMAES:
             self.local_opt=BayesianOptimization(f=self.spec,domain=format_local_bounds,
                                             acquisition_type='LCB',
                                             initial_design_numdata=self.population_size//4)
-            self.local_opt.run_optimization(max_iter=self.population_size-(self.population_size//4))
+            self.local_opt.run_optimization(max_iter=self.population_size-(self.population_size//4),eps=-1)
             self.Sim_count+=len(self.local_opt.X)
             solutions=[]
-            for _ in range(self.population_size):
+            #for _ in range(self.population_size):
+            for _ in range(len(self.local_opt.X)):
                 solutions.append((self.local_opt.X[_],self.local_opt.Y[_]))
         if len(self.local_prior_param)>=(self.population_size//4):
             self.local_opt=BayesianOptimization(f=self.spec,domain=format_local_bounds,
@@ -103,10 +104,11 @@ class BO_CMAES:
                                             X=np.array(self.local_prior_param),
                                             Y=np.array(self.local_prior_robust)
                                             )
-            self.local_opt.run_optimization(max_iter=self.population_size)
+            self.local_opt.run_optimization(max_iter=self.population_size,eps=-1)
             self.Sim_count+=len(self.local_opt.X)-len(self.local_prior_param)
             solutions=[]
-            for _ in range(self.population_size):
+            #for _ in range(self.population_size):
+            for _ in range(len(self.local_opt.X)-len(self.local_prior_param)):
                 solutions.append((self.local_opt.X[_+len(self.local_prior_param)],self.local_opt.Y[_+len(self.local_prior_param)]))
         """
         self.local_opt=BayesianOptimization(f=self.spec,domain=format_local_bounds,
@@ -118,6 +120,12 @@ class BO_CMAES:
         for _ in range(self.population_size):
             solutions.append((self.local_opt.X[_],self.local_opt.Y[_]))
         """
+        if len(solutions)!=self.population_size:
+            self.local_opt.run_optimization(max_iter=(self.population_size-len(solutions)),eps=-1)
+            self.Sim_count+=self.population_size-len(solutions)
+            for _ in range(self.population_size-len(solutions)):
+                solutions.append((self.local_opt.X[-1-_],self.local_opt.Y[-1-_]))
+   
         self.CMA_optimizer.tell(solutions)
         self.Global_Sim_Results.append(solutions)
         self.Record_Min_Rob.append(self.local_opt.Y.min())
@@ -165,11 +173,22 @@ class BO_CMAES:
         self.local_opt=BayesianOptimization(f=self.spec,domain=format_local_bounds,
                                         acquisition_type='LCB',
                                         initial_design_numdata=self.population_size//4)
-        self.local_opt.run_optimization(max_iter=self.population_size-(self.population_size//4))
+        self.local_opt.run_optimization(max_iter=self.population_size-(self.population_size//4),eps=-1)
         self.Sim_count+=len(self.local_opt.X)
         solutions=[]
-        for _ in range(self.population_size):
+        self.local_sol=[]
+       # for _ in range(self.population_size):
+        for _ in range(len(self.local_opt.X)):
             solutions.append((self.local_opt.X[_],self.local_opt.Y[_]))
+            self.local_sol.append((self.local_opt.X[_],self.local_opt.Y[_]))
+        sol_size=len(solutions)
+        if len(solutions)!=self.population_size:
+            self.local_opt.run_optimization(max_iter=(self.population_size-len(solutions)),eps=-1)
+            self.Sim_count+=self.population_size-len(solutions)
+            #for _ in range(self.population_size-len(solutions)):
+            for _ in range(len(self.local_opt.X)-len(solutions)):
+                solutions.append((self.local_opt.X[-1-_],self.local_opt.Y[-1-_]))
+                self.local_sol.append((self.local_opt.X[-1-_],self.local_opt.Y[-1-_]))
         self.CMA_optimizer.tell(solutions)
         self.Global_Sim_Results.append(solutions)
         self.Local_Min_Rob=self.local_opt.Y.min()
