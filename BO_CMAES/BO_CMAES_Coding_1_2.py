@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Mar 29 16:17:33 2023
@@ -31,7 +31,8 @@ class BO_CMAES:
             spec,
             boundary,       #bounds=np.array([[-10,10],[-10,10]])
             budget,
-            population_size):
+            population_size,
+            jump_con):
         self.spec=spec              #Robustness function with built in simulation
         self.global_bounds=boundary     #global boundaries of variables
         self.population_size=population_size #number of iterations per localized model
@@ -41,6 +42,7 @@ class BO_CMAES:
         self.Records_bounds=[]
         self.Record_Min_Rob=[]
         self.Record_jump=[]
+        self.jump_con=jump_con
         
         
     def initialize(self):
@@ -200,9 +202,11 @@ class BO_CMAES:
         
     def run_BO_CMA(self):
         while self.Sim_count<self.budget:
-            if self.stagnant_count<=2:
+            #if self.stagnant_count<=2:
+            if self.stagnant_count<=self.jump_con:
                 self.Local()
-            if self.stagnant_count>2:
+            #if self.stagnant_count>2:
+            if self.stagnant_count>self.jump_con:
                 self.G_Jump()
       
     def get_violation_count(self):
@@ -286,4 +290,4 @@ def prior_knowledge(self):
                 self.local_prior_robust.append(self.Global_Sim_Results[g][i][1]);
     return self.local_prior_param, self.local_prior_robust
 
-                
+                              
